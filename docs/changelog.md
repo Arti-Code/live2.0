@@ -7,6 +7,9 @@ _Artur Gwoździowski 2023_
 * * *
 ##### v0.2
 - [ ] work in progress...
+- [ ] custom font
+- [ ] draw some text info (title, fps)
+- [ ] custom window set
 _ _ _
 
 ##### v0.1

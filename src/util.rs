@@ -37,16 +37,17 @@ pub fn angle2vec2(angle: f32) -> Vec2 {
 }
 
 pub fn wrap_around(v: &Vec2) -> Vec2 {
+    let tolerance = 15.0;
     let mut vr = Vec2::new(v.x, v.y);
-    if vr.x > SCREEN_WIDTH {
-        vr.x = 0.0;
-    } else if vr.x < 0.0 {
-        vr.x = SCREEN_WIDTH;
+    if vr.x > SCREEN_WIDTH+tolerance {
+        vr.x = 0.0-tolerance;
+    } else if vr.x < 0.0-tolerance {
+        vr.x = SCREEN_WIDTH+tolerance;
     }
-    if vr.y > SCREEN_HEIGHT {
-        vr.y = 0.0;
-    } else if vr.y < 0.0 {
-        vr.y = SCREEN_HEIGHT;
+    if vr.y > SCREEN_HEIGHT+tolerance {
+        vr.y = 0.0-tolerance;
+    } else if vr.y < 0.0-tolerance {
+        vr.y = SCREEN_HEIGHT+tolerance;
     }
     return vr;
 }
