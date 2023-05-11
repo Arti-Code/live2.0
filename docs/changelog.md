@@ -1,21 +1,28 @@
+
 # LIVE^2^
 
-### ver 0.2
+## ver 0.2
 
-_Artur Gwoździowski 2023_
+### CHANGELOG
+
+#### _Artur Gwoździowski 2023_
 
 * * *
+
 ##### v0.2
-- [ ] work in progress...
-- [ ] custom font
-- [ ] draw some text info (title, fps)
-- [ ] custom window set
-_ _ _
+
+- [x] work in progress...
+- [x] custom font
+- [x] draw some text info (title, fps)
+- [x] custom window set
+
+* * *
 
 ##### v0.1
-- [ ] init project
-- [ ] simulation space
-- [ ] agent entity
-- [ ] documentation
-- [ ] icon
-- [ ] main loop
+
+- [x] init project
+- [x] simulation space
+- [x] agent entity
+- [x] documentation
+- [x] icon
+- [x] main loop
