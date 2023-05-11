@@ -30,7 +30,7 @@ fn app_configuration() -> Conf {
 #[macroquad::main(app_configuration)]
 async fn main() {
     set_pc_assets_folder("assets");
-    load_ttf_font("font\\font.ttf").await;
+    let font = load_ttf_font("font\\font.ttf").await.unwrap();
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
     let mut agents: Vec<Agent> = vec![];
 
@@ -40,21 +40,40 @@ async fn main() {
         agents.push(agent);
     }
 
+    let txt_param = TextParams{
+        font: font,
+        color: GRAY,
+        font_size: 12,
+        ..Default::default()
+    };
+    let title_param = TextParams{
+        font: font,
+        color: WHITE,
+        font_size: 22,
+        ..Default::default()
+    };
+    let title2_param = TextParams{
+        font: font,
+        color: WHITE,
+        font_size: 18,
+        ..Default::default()
+    };
+
     loop {
         let delta = get_frame_time();
         let fps = get_fps();
         update(&mut agents, delta);
-        draw(&agents, fps);
+        draw(&agents, fps, title_param, title2_param, txt_param);
 
         next_frame().await;
     }
 }
 
-fn draw(agents: &Vec<Agent>, fps: i32) {
+fn draw(agents: &Vec<Agent>, fps: i32, font_param_title: TextParams, font_param_title2: TextParams, font_param: TextParams,) {
     clear_background(BLACK);
-    draw_text("LIVE", SCREEN_WIDTH/2.0-20.0, 20.0, 24.0, WHITE);
-    draw_text("2", SCREEN_WIDTH/2.0+22.0, 16.0, 24.0, WHITE);
-    draw_text(&format!("FPS: {}", fps), 10.0, 15.0, 18.0, GRAY);
+    draw_text_ex("LIVE", SCREEN_WIDTH/2.0-30.0, 20.0, font_param_title);
+    draw_text_ex("2", SCREEN_WIDTH/2.0+26.0, 15.0, font_param_title2);
+    draw_text_ex(&format!("FPS: {}", fps), 10.0, 15.0, font_param);
     for a in agents.iter() {
         a.draw();
     }
