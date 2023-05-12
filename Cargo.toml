@@ -1,12 +1,13 @@
 [package]
-name = "live"
-version = "0.2.0"
+name = "live2"
+version = "0.2.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 macroquad = "0.3.25"
+parry2d = "0.13.4"
 
 [build-dependencies]
 embed-resource = "2.1.1"
