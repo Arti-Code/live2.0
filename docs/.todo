@@ -1,4 +1,4 @@
 Live2:
     0.2:
-        ☐ collisions between circles
-        ☐ collisions between circles and polygons
+        ☐ collisions between circles (parry2d)
+        ☐ collisions between circles and polygons (parry2d)
