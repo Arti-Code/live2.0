@@ -36,7 +36,7 @@ fn app_configuration() -> Conf {
 async fn main() {
     //let mut fps30: VecDeque<i32, 30> = VecDeque::from([60; 30]);
     set_pc_assets_folder("assets");
-    let font = load_ttf_font("font\\font.ttf").await.unwrap();
+    let font = load_ttf_font("fonts\\jetbrain_medium.ttf").await.unwrap();
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
     let mut agents: Vec<Agent> = vec![];
 
