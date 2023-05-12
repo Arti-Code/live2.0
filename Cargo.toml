@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 macroquad = "0.3.25"
+parry2d = "0.13.4"
 
 [build-dependencies]
 embed-resource = "2.1.1"

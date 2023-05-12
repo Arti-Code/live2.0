@@ -11,7 +11,7 @@
 
 ##### v0.2
 
-- [x] work in progress...
+- [ ] circles collision (work in progress...)
 - [x] custom font
 - [x] draw some text info (title, fps)
 - [x] custom window set

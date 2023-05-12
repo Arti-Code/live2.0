@@ -2,6 +2,7 @@
 use std::f32::consts::PI;
 
 use macroquad::{prelude::*, color}; 
+use parry2d::shape::*;
 use crate::util::*;
 use crate::consts::*;
 
@@ -14,17 +15,20 @@ pub struct Agent {
     pub size: f32,
     pub color: color::Color,
     pub pulse: f32,
+    pub shape: Ball,
 }
 
 impl Agent {
     pub fn new() -> Self {
+        let s = rand::gen_range(4, 14) as f32;
         Self {
             pos: random_position(SCREEN_WIDTH, SCREEN_HEIGHT),
             rot: random_rotation(),
             vel: rand::gen_range(0.0, 1.0)*AGENT_SPEED,
-            size: rand::gen_range(4, 14) as f32,
+            size: s,
             color: random_color(),
-            pulse: rand::gen_range(0.0, 1.0)
+            pulse: rand::gen_range(0.0, 1.0),
+            shape: Ball { radius: s }
         }
     }
     pub fn draw(&self) {
@@ -37,12 +41,12 @@ impl Agent {
         let y2 = y0 + dir.y * self.size*2.0;
         let pulse = (self.pulse * 2.0) - 1.0;
         draw_circle_lines(x0, y0, self.size, 2.0, self.color);
-        draw_circle(x0, y0, (self.size/3.0)*pulse.abs(), self.color);
+        draw_circle(x0, y0, (self.size/2.0)*pulse.abs(), self.color);
         draw_line(x1, y1, x2, y2, 3.0, self.color);
     }
     pub fn update(&mut self, dt: f32) {
-        self.pulse = (self.pulse + dt)%1.0;
-        self.rot += rand::gen_range(-1.0, 1.0)*2.0*PI*dt;
+        self.pulse = (self.pulse + dt*0.25)%1.0;
+        self.rot += rand::gen_range(-1.0, 1.0)*AGENT_ROTATION*2.0*PI*dt;
         self.rot = self.rot%(2.0*PI);
         let dir = angle2vec2(self.rot);
         self.pos += dir * self.vel * dt;

@@ -4,15 +4,20 @@ mod consts;
 mod util;
 mod agent;
 
+use std::thread::sleep;
+use std::time::Duration;
 use macroquad::miniquad::conf::Icon;
 use macroquad::prelude::*;
 use macroquad::window; 
 use macroquad::file::*;
+use parry2d::query::details::contact_ball_ball;
 use crate::consts::*;
 use crate::util::*;
 use crate::agent::*;
 use macroquad::time::*;
-
+use std::collections::VecDeque;
+use parry2d::query::*;
+use parry2d::shape::*;
 
 fn app_configuration() -> Conf {
     Conf{
@@ -29,6 +34,7 @@ fn app_configuration() -> Conf {
 
 #[macroquad::main(app_configuration)]
 async fn main() {
+    //let mut fps30: VecDeque<i32, 30> = VecDeque::from([60; 30]);
     set_pc_assets_folder("assets");
     let font = load_ttf_font("font\\font.ttf").await.unwrap();
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -62,9 +68,12 @@ async fn main() {
     loop {
         let delta = get_frame_time();
         let fps = get_fps();
+        //fps30.pop_back();
+        //fps30.push_front(fps);
+        //let avg_fps = fps30.
         update(&mut agents, delta);
         draw(&agents, fps, title_param, title2_param, txt_param);
-
+        //wait(delta).await;
         next_frame().await;
     }
 }
@@ -85,3 +94,16 @@ fn update(agents: &mut Vec<Agent>, dt: f32) {
     }
 }
 
+/* fn collisions(agents: &mut Vec<Agent>) {
+    for a in agents.iter_mut() {
+        contact_ball_ball(pos12, b1, b2, prediction)
+        a.update(dt);
+    }
+} */
+
+async fn wait(delta: f32) {
+    let t = FIX_DT - delta;
+    if t > 0.0 {
+        sleep(Duration::from_secs_f32(t));
+    }
+}
