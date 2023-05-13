@@ -36,7 +36,7 @@ fn app_configuration() -> Conf {
 async fn main() {
     //let mut fps30: VecDeque<i32, 30> = VecDeque::from([60; 30]);
     set_pc_assets_folder("assets");
-    let font = load_ttf_font("font\\font.ttf").await.unwrap();
+    let font = load_ttf_font("fonts\\jetbrain_medium.ttf").await.unwrap();
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
     let mut agents: Vec<Agent> = vec![];
 
@@ -80,8 +80,8 @@ async fn main() {
 
 fn draw(agents: &Vec<Agent>, fps: i32, font_param_title: TextParams, font_param_title2: TextParams, font_param: TextParams,) {
     clear_background(BLACK);
-    draw_text_ex("LIVE", SCREEN_WIDTH/2.0-30.0, 20.0, font_param_title);
-    draw_text_ex("2", SCREEN_WIDTH/2.0+26.0, 15.0, font_param_title2);
+    draw_text_ex("LIVE", SCREEN_WIDTH/2.0-30.0, 25.0, font_param_title);
+    draw_text_ex("2", SCREEN_WIDTH/2.0+26.0, 20.0, font_param_title2);
     draw_text_ex(&format!("FPS: {}", fps), 10.0, 15.0, font_param);
     for a in agents.iter() {
         a.draw();
