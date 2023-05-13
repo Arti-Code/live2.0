@@ -16,6 +16,7 @@ pub struct Agent {
     pub color: color::Color,
     pub pulse: f32,
     pub shape: Ball,
+    pub collided: bool,
 }
 
 impl Agent {
@@ -28,7 +29,8 @@ impl Agent {
             size: s,
             color: random_color(),
             pulse: rand::gen_range(0.0, 1.0),
-            shape: Ball { radius: s }
+            shape: Ball { radius: s },
+            collided: false,
         }
     }
     pub fn draw(&self) {
@@ -42,6 +44,9 @@ impl Agent {
         let pulse = (self.pulse * 2.0) - 1.0;
         draw_circle_lines(x0, y0, self.size, 2.0, self.color);
         draw_circle(x0, y0, (self.size/2.0)*pulse.abs(), self.color);
+        if self.collided {
+            draw_circle(x0, y0, self.size*2.0, self.color);
+        }
         draw_line(x1, y1, x2, y2, 3.0, self.color);
     }
     pub fn update(&mut self, dt: f32) {
