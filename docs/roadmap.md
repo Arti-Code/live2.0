@@ -9,7 +9,7 @@
 
 * * *
 
-- [ ] collision detection
+- [ ] collision detection (in progress...)
 - [ ] neural network
 - [ ] genethics algorithm
 - [ ] input events
