@@ -3,6 +3,8 @@
 mod consts;
 mod util;
 mod agent;
+//mod rock;
+mod num;
 
 use std::thread::sleep;
 use std::time::Duration;
@@ -10,6 +12,7 @@ use macroquad::miniquad::conf::Icon;
 use macroquad::prelude::*;
 use macroquad::window; 
 use macroquad::file::*;
+use num::*;
 use parry2d::query::details::contact_ball_ball;
 use crate::consts::*;
 use crate::util::*;
@@ -71,18 +74,21 @@ async fn main() {
         //fps30.pop_back();
         //fps30.push_front(fps);
         //let avg_fps = fps30.
+        let mut contacts: usize = 0;
         update(&mut agents, delta);
-        draw(&agents, fps, title_param, title2_param, txt_param);
+        contacts = collisions(&agents);
+        draw(&agents, contacts, fps, title_param, title2_param, txt_param);
         //wait(delta).await;
         next_frame().await;
     }
 }
 
-fn draw(agents: &Vec<Agent>, fps: i32, font_param_title: TextParams, font_param_title2: TextParams, font_param: TextParams,) {
+fn draw(agents: &Vec<Agent>, contacts: usize, fps: i32, font_param_title: TextParams, font_param_title2: TextParams, font_param: TextParams,) {
     clear_background(BLACK);
     draw_text_ex("LIVE", SCREEN_WIDTH/2.0-30.0, 25.0, font_param_title);
     draw_text_ex("2", SCREEN_WIDTH/2.0+26.0, 20.0, font_param_title2);
     draw_text_ex(&format!("FPS: {}", fps), 10.0, 15.0, font_param);
+    draw_text_ex(&format!("CONTACTS: {}", contacts), 15.0, 50.0, font_param_title2);
     for a in agents.iter() {
         a.draw();
     }
@@ -92,6 +98,32 @@ fn update(agents: &mut Vec<Agent>, dt: f32) {
     for a in agents.iter_mut() {
         a.update(dt);
     }
+}
+
+fn collisions(agents: &Vec<Agent>) -> usize {
+    let mut c: usize = 0;
+    for a1 in agents.iter() {
+        for a2 in agents.iter() {
+            if a1.pos != a2.pos {
+                let pos1 = make_isometry(a1.pos.x, a1.pos.y, a1.rot);
+                let pos2 = make_isometry(a2.pos.x, a2.pos.y, a2.rot);
+                let d = contact_circles(pos1, a1.size, pos2, a2.size);
+                if d <= 0.0 {
+                    c += 1;
+                }                
+                /* match contact_circles(pos1, a1.size, pos2, a2.size) {
+                    Some(c) => {
+                        if c.dist <= 0.0 {
+                            println!("contact!");
+                        }
+                    },
+                    //Some(_) => {},
+                    None => {}
+                } */
+            }
+        }
+    }
+    c
 }
 
 /* fn collisions(agents: &mut Vec<Agent>) {

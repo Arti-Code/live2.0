@@ -1,6 +1,6 @@
 [package]
 name = "live2"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 authors = ["Artur Gwoździowski"]
 
@@ -9,6 +9,9 @@ authors = ["Artur Gwoździowski"]
 [dependencies]
 macroquad = "0.3.25"
 parry2d = "0.13.4"
+nalgebra = { version = "0.32.2", features = ["convert-glam020"] }
+glam = "0.24.0"
+#nalgebra = "0.32.2"
 
 [build-dependencies]
 embed-resource = "2.1.1"
