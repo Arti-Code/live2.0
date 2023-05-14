@@ -2,12 +2,16 @@
 name = "live2"
 version = "0.2.3"
 edition = "2021"
+authors = ["Artur Gwoździowski"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 macroquad = "0.3.25"
 parry2d = "0.13.4"
+nalgebra = { version = "0.32.2", features = ["convert-glam020"] }
+glam = "0.24.0"
+#nalgebra = "0.32.2"
 
 [build-dependencies]
 embed-resource = "2.1.1"

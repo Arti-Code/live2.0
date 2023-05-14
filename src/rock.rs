@@ -1,36 +1,36 @@
-#![allow(unused)]
+/* #![allow(unused)]
 use std::f32::consts::PI;
 
 use macroquad::{prelude::*, color}; 
+use parry2d::math::Point;
+use parry2d::na::Point2;
 use parry2d::shape::*;
 use crate::util::*;
 use crate::consts::*;
 
 
 #[derive(Clone, Copy)]
-pub struct Agent {
+pub struct Rock {
     pub pos: Vec2,
-    pub rot: f32,
-    pub vel: f32,
+    pub sides: usize,
     pub size: f32,
+    pub deviation: f32,
     pub color: color::Color,
-    pub pulse: f32,
-    pub shape: Ball,
-    pub collided: bool,
+    pub shape: ConvexPolygon,
 }
 
 impl Agent {
     pub fn new() -> Self {
-        let s = rand::gen_range(4, 14) as f32;
+        let s = rand::gen_range(8, 24) as f32;
         Self {
             pos: random_position(SCREEN_WIDTH, SCREEN_HEIGHT),
-            rot: random_rotation(),
-            vel: rand::gen_range(0.0, 1.0)*AGENT_SPEED,
+            sides: rand::gen_range(5, 10),
             size: s,
-            color: random_color(),
-            pulse: rand::gen_range(0.0, 1.0),
-            shape: Ball { radius: s },
-            collided: false,
+            color: GRAY,
+            shape: ConvexPolygon{
+                points: vec![, Point2::new(1.0, 1.0), Point2::new(1.0, 1.0), Point2::new(1.0, 1.0)],
+                normals: 
+            }
         }
     }
     pub fn draw(&self) {
@@ -44,9 +44,6 @@ impl Agent {
         let pulse = (self.pulse * 2.0) - 1.0;
         draw_circle_lines(x0, y0, self.size, 2.0, self.color);
         draw_circle(x0, y0, (self.size/2.0)*pulse.abs(), self.color);
-        if self.collided {
-            draw_circle(x0, y0, self.size*2.0, self.color);
-        }
         draw_line(x1, y1, x2, y2, 3.0, self.color);
     }
     pub fn update(&mut self, dt: f32) {
@@ -57,4 +54,4 @@ impl Agent {
         self.pos += dir * self.vel * dt;
         self.pos = wrap_around(&self.pos);
     }
-}
+} */
