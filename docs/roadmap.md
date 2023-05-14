@@ -9,6 +9,15 @@
 
 * * *
 
+- [ ] biomes
+- [ ] sensing
+- [ ] fittnes function
+- [ ] mutation
+- [ ] recombination
+- [ ] species
+- [ ] generations
+- [ ] genome coding
+- [ ] camera with user control
 - [ ] collision detection
 - [ ] neural network
 - [ ] genethics algorithm

@@ -1,4 +1,19 @@
 Live2:
     0.2:
+        ☐ camera viewport
+        ☐ camera translation, zoom in/zoom out
+        ☐ keyboard input
+        ☐ mouse input
         ✔ collisions between circles (parry2d)
         ☐ collisions between circles and polygons (parry2d)
+        ☐ agent's energy
+        ☐ survability
+        ☐ sense of vision
+        ☐ attack
+        ☐ neural network
+        ☐ genethic algorithm
+        ☐ loading/saving simulation
+        ☐ obstacles
+        ☐ resources
+        ☐ ui
+        
