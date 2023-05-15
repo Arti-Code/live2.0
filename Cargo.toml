@@ -11,6 +11,8 @@ macroquad = "0.3.25"
 parry2d = "0.13.4"
 nalgebra = { version = "0.32.2", features = ["convert-glam020"] }
 glam = "0.24.0"
+egui-macroquad = "0.15.0"
+egui = "0.21.0"
 #nalgebra = "0.32.2"
 
 [build-dependencies]

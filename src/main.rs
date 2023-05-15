@@ -5,6 +5,7 @@ mod util;
 mod agent;
 //mod rock;
 mod num;
+mod ui;
 
 use std::thread::sleep;
 use std::time::Duration;
@@ -21,6 +22,7 @@ use macroquad::time::*;
 use std::collections::VecDeque;
 use parry2d::query::*;
 use parry2d::shape::*;
+use crate::ui::*;
 
 fn app_configuration() -> Conf {
     Conf{
@@ -78,6 +80,7 @@ async fn main() {
     let text_params = init_text_params().await;
     let mut agents: Vec<Agent> = vec![];
     let mut collisions_list: Vec<CollisionPair> = vec![];
+    let mut ui_state = UIState::new();
     for _ in 0..AGENTS_NUM {
         let agent = Agent::new();
         agents.push(agent);
@@ -89,7 +92,9 @@ async fn main() {
         let mut contacts: usize = 0;
         update(&mut agents, delta);
         contacts = collisions(&agents/* , &mut collisions_list */);
+        ui_process(&mut ui_state, fps, delta, contacts);
         draw(&agents, contacts, fps, &text_params);
+        ui_draw();
         next_frame().await;
     }
 }
@@ -104,14 +109,11 @@ fn draw(agents: &Vec<Agent>, contacts: usize, fps: i32, fonts: &TextParamsBox) {
     for a in agents.iter() {
         a.draw();
     }
-    draw_text(fonts, contacts, fps);
 }
 
-fn draw_text(fonts: &TextParamsBox, contacts: usize, fps: i32) {
+fn draw_text(fonts: &TextParamsBox) {
     draw_text_ex("LIVE", SCREEN_WIDTH/2.0-30.0, 25.0, fonts.title);
     draw_text_ex("2", SCREEN_WIDTH/2.0+26.0, 20.0, fonts.title2);
-    draw_text_ex(&format!("FPS: {}", fps), 10.0, 15.0, fonts.standard);
-    draw_text_ex(&format!("CONTACTS: {}", contacts), 15.0, 50.0, fonts.title2);
 }
 
 fn update(agents: &mut Vec<Agent>, dt: f32) {
@@ -127,15 +129,14 @@ fn collisions(agents: &Vec<Agent>/* , collision_list: &'b Vec<CollisionPair> */)
             if a1.pos != a2.pos {
                 let pos1 = make_isometry(a1.pos.x, a1.pos.y, a1.rot);
                 let pos2 = make_isometry(a2.pos.x, a2.pos.y, a2.rot);
-                let d = contact_circles(pos1, a1.size, pos2, a2.size);
-                if d <= 0.0 {
-                    c += 1;
-                    /* let mut collision_event = CollisionPair{
-                        object1: a1,
-                        object2: a2,
-                        overlap: d,
-                    };
-                    collision_list.push(collision_event); */
+                let contact = contact_circles(pos1, a1.size, pos2, a2.size);
+                match contact {
+                    Some(contact) => {
+                        if contact.dist <= 0.0 {
+                            c += 1;
+                        }
+                    },
+                    None => {}
                 }
             }
         }
