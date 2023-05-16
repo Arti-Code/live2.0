@@ -4,7 +4,7 @@
 mod consts;
 mod util;
 mod agent;
-//mod rock;
+mod particle;
 mod num;
 mod ui;
 
@@ -19,6 +19,7 @@ use parry2d::query::details::contact_ball_ball;
 use crate::consts::*;
 use crate::util::*;
 use crate::agent::*;
+use crate::particle::*;
 use macroquad::time::*;
 use std::collections::VecDeque;
 use parry2d::query::*;
@@ -79,11 +80,11 @@ async fn init_text_params() -> TextParamsBox {
 async fn main() {
     init();
     let text_params = init_text_params().await;
-    let mut agents: Vec<Agent> = vec![];
+    let mut agents: Vec<Particle> = vec![];
     let mut collisions_list: Vec<CollisionPair> = vec![];
     let mut ui_state = UIState::new();
     for _ in 0..AGENTS_NUM {
-        let agent = Agent::new();
+        let agent = Particle::new();
         agents.push(agent);
     }
 
@@ -105,7 +106,7 @@ fn init() {
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-fn draw(agents: &Vec<Agent>, contacts: usize, fps: i32, fonts: &TextParamsBox) {
+fn draw(agents: &Vec<Particle>, contacts: usize, fps: i32, fonts: &TextParamsBox) {
     clear_background(BLACK);
     for a in agents.iter() {
         a.draw();
@@ -117,13 +118,13 @@ fn draw_text(fonts: &TextParamsBox) {
     draw_text_ex("2", SCREEN_WIDTH/2.0+26.0, 20.0, fonts.title2);
 }
 
-fn update(agents: &mut Vec<Agent>, dt: f32) {
+fn update(agents: &mut Vec<Particle>, dt: f32) {
     for a in agents.iter_mut() {
         a.update(dt);
     }
 }
 
-fn collisions(agents: &Vec<Agent>/* , collision_list: &'b Vec<CollisionPair> */) -> usize {
+fn collisions(agents: &Vec<Particle>/* , collision_list: &'b Vec<CollisionPair> */) -> usize {
     let mut c: usize = 0;
     for a1 in agents.iter() {
         for a2 in agents.iter() {
