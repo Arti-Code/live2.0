@@ -20,9 +20,10 @@ impl UIState {
 
 pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, contacts_num: usize) {
     egui_macroquad::ui(|egui_ctx| {
+        
         egui::TopBottomPanel::top("top_panel").show(egui_ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.heading(RichText::new( "LIVE 2.0").color(Color32::GREEN).strong().heading());
+                ui.heading(RichText::new( "LIVE 2.0").color(Color32::GREEN).strong());
                 ui.add_space(5.0);
                 ui.separator();
                 ui.add_space(5.0);
@@ -50,35 +51,39 @@ pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, contacts_num: us
                 ui.add_space(10.0);
             });
         });
-
+            
         if ui_state.performance {
-            egui::Window::new("Performance Monitor")
+            egui::Window::new("Monitor")
+            .default_width(125.0)
             .show(egui_ctx, |ui| {
-                ui.label(format!("dT: {}ms", (delta*1000.0).round()));
+                ui.label(format!("DELTA: {}ms", (delta*1000.0).round()));
                 ui.label(format!("FPS: {}", fps));
-                ui.label(format!("contacts: {}", contacts_num));
+                ui.label(format!("CONTACTS: {}", contacts_num));
             });
         }
-
+        
         if ui_state.quit {
             egui::Window::new("Quit")
+            .default_width(125.0)
             .show(egui_ctx, |ui| {
-                
-                ui.horizontal_centered(|h1| {
-                    h1.label("Quit simulator?");
+                ui.horizontal(|head| {
+                    head.heading("Are you sure?");
+                    //head.separator();
                 });
-
-                ui.horizontal_centered(|h2| {
-                    if h2.button(RichText::new("No").color(Color32::WHITE)).clicked() {
-                        ui_state.quit = false;
-                    }
-                    if h2.button(RichText::new("Yes").color(Color32::RED)).clicked() {
-                        std::process::exit(0);
-                    }
+                
+                ui.horizontal(|mid| {
+                    mid.columns(2, |columns| {
+                        if columns[0].button(RichText::new("No").color(Color32::WHITE)).clicked() {
+                            ui_state.quit = false;
+                        }
+                        if columns[1].button(RichText::new("Yes").color(Color32::RED)).clicked() {
+                            std::process::exit(0);
+                        }
+                    });
                 });
             });
         }
-
+            
     });
 }
 
