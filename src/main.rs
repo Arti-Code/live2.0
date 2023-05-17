@@ -97,7 +97,7 @@ fn collisions(agents: &Vec<Agent>) -> Vec<(&Agent, Vec2, f32)> {
     let mut hits: Vec<(&Agent, Vec2, f32)> = vec![];
     for a1 in agents.iter() {
         for a2 in agents.iter() {
-            if a1.pos != a2.pos {
+            if a1.unique != a2.unique {
                 let pos1 = make_isometry(a1.pos.x, a1.pos.y, a1.rot);
                 let pos2 = make_isometry(a2.pos.x, a2.pos.y, a2.rot);
                 let contact = contact_circles(pos1, a1.size, pos2, a2.size);
