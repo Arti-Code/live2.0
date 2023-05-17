@@ -11,7 +11,8 @@
 
 ##### v0.2
 
-- [ ] circles collision (work in progress...)
+- [x] circles collision (work in progress...)
+- [x] using parry2d
 - [x] custom font
 - [x] draw some text info (title, fps)
 - [x] custom window set
