@@ -1,5 +1,6 @@
 use egui_macroquad;
-use egui;
+
+use egui::{self, Context};
 use egui::{RichText, Color32};
 
 
@@ -18,9 +19,16 @@ impl UIState {
 }
 
 
-pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, contacts_num: usize) {
+pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32) {
     egui_macroquad::ui(|egui_ctx| {
-        
+        build_top_menu(egui_ctx, ui_state);
+        build_quit_window(egui_ctx, ui_state);
+        build_monit_window(egui_ctx, ui_state, fps, delta);
+    });
+}
+
+fn build_top_menu(egui_ctx: &Context, ui_state: &mut UIState) {
+    //egui_macroquad::ui(|egui_ctx| {
         egui::TopBottomPanel::top("top_panel").show(egui_ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.heading(RichText::new( "LIVE 2.0").color(Color32::GREEN).strong());
@@ -51,17 +59,27 @@ pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, contacts_num: us
                 ui.add_space(10.0);
             });
         });
-            
+    //});
+}
+
+
+fn build_monit_window(egui_ctx: &Context, ui_state: &mut UIState, fps: i32, delta: f32) {
+    //egui_macroquad::ui(|egui_ctx| {
         if ui_state.performance {
             egui::Window::new("Monitor")
             .default_width(125.0)
             .show(egui_ctx, |ui| {
                 ui.label(format!("DELTA: {}ms", (delta*1000.0).round()));
                 ui.label(format!("FPS: {}", fps));
-                ui.label(format!("CONTACTS: {}", contacts_num));
+                //ui.label(format!("CONTACTS: {}", contacts_num));
             });
-        }
-        
+        }    
+    //});
+}
+
+
+fn build_quit_window(egui_ctx: &Context, ui_state: &mut UIState) {
+    //egui_macroquad::ui(|egui_ctx| {
         if ui_state.quit {
             egui::Window::new("Quit")
             .default_width(125.0)
@@ -70,7 +88,6 @@ pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, contacts_num: us
                     head.heading("Are you sure?");
                     //head.separator();
                 });
-                
                 ui.horizontal(|mid| {
                     mid.columns(2, |columns| {
                         if columns[0].button(RichText::new("No").color(Color32::WHITE)).clicked() {
@@ -82,9 +99,8 @@ pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, contacts_num: us
                     });
                 });
             });
-        }
-            
-    });
+        }    
+    //});
 }
 
 pub fn ui_draw() {

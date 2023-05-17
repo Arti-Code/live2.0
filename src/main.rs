@@ -4,7 +4,7 @@
 mod consts;
 mod util;
 mod agent;
-//mod rock;
+//mod particle;
 mod num;
 mod ui;
 
@@ -19,6 +19,7 @@ use parry2d::query::details::contact_ball_ball;
 use crate::consts::*;
 use crate::util::*;
 use crate::agent::*;
+//use crate::particle::*;
 use macroquad::time::*;
 use std::collections::VecDeque;
 use parry2d::query::*;
@@ -32,8 +33,6 @@ fn app_configuration() -> Conf {
         window_height: SCREEN_HEIGHT as i32,
         sample_count: 8,
         window_resizable: false,
-        //icon: Some(load_file("img\\icon.png").into()),
-        //icon: Icon::from::<Vec<u8>>(load_image("img\\icon.png").await.unwrap().bytes),
         ..Default::default()
     }
 }
@@ -44,42 +43,12 @@ struct CollisionPair<'a> {
     overlap: f32,
 }
 
-struct TextParamsBox {
-    title: TextParams,
-    title2: TextParams,
-    standard: TextParams,
-}
-
-async fn init_text_params() -> TextParamsBox {
-    let font = load_ttf_font("fonts\\jetbrain_medium.ttf").await.unwrap();
-    let txt_box = TextParamsBox {
-        title: TextParams{
-            font: font,
-            color: WHITE,
-            font_size: 22,
-            ..Default::default()
-        },
-        title2: TextParams{
-            font: font,
-            color: WHITE,
-            font_size: 18,
-            ..Default::default()
-        },
-        standard: TextParams{
-            font: font,
-            color: GRAY,
-            font_size: 12,
-            ..Default::default()
-        },
-    };
-    return txt_box
-}
-
 #[macroquad::main(app_configuration)]
 async fn main() {
     init();
-    let text_params = init_text_params().await;
+    //let text_params = init_text_params().await;
     let mut agents: Vec<Agent> = vec![];
+    let mut contacts: Vec<(Vec2, Vec2)> = vec![];
     let mut collisions_list: Vec<CollisionPair> = vec![];
     let mut ui_state = UIState::new();
     for _ in 0..AGENTS_NUM {
@@ -90,11 +59,11 @@ async fn main() {
     loop {
         let delta = get_frame_time();
         let fps = get_fps();
-        let mut contacts: usize = 0;
+        //let mut contacts_num: usize = 0;
         update(&mut agents, delta);
-        contacts = collisions(&agents/* , &mut collisions_list */);
-        ui_process(&mut ui_state, fps, delta, contacts);
-        draw(&agents, contacts, fps, &text_params);
+        let hits = collisions(&agents);
+        ui_process(&mut ui_state, fps, delta);
+        draw(&agents, &contacts);
         ui_draw();
         next_frame().await;
     }
@@ -105,16 +74,16 @@ fn init() {
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-fn draw(agents: &Vec<Agent>, contacts: usize, fps: i32, fonts: &TextParamsBox) {
+fn draw(agents: &Vec<Agent>, contacts: &Vec<(Vec2, Vec2)>) {
     clear_background(BLACK);
     for a in agents.iter() {
         a.draw();
     }
-}
-
-fn draw_text(fonts: &TextParamsBox) {
-    draw_text_ex("LIVE", SCREEN_WIDTH/2.0-30.0, 25.0, fonts.title);
-    draw_text_ex("2", SCREEN_WIDTH/2.0+26.0, 20.0, fonts.title2);
+    for contact in contacts.iter() {
+        let p = contact.0;
+        let n = contact.1*10.0;
+        draw_line(p.x, p.y, p.x+n.x, p.y+n.y, 1.0, WHITE);
+    }
 }
 
 fn update(agents: &mut Vec<Agent>, dt: f32) {
@@ -123,8 +92,9 @@ fn update(agents: &mut Vec<Agent>, dt: f32) {
     }
 }
 
-fn collisions(agents: &Vec<Agent>/* , collision_list: &'b Vec<CollisionPair> */) -> usize {
-    let mut c: usize = 0;
+fn collisions(agents: &Vec<Agent>) -> Vec<(&Agent, Vec2, f32)> {
+    let mut contacts_num: usize = 0;
+    let mut hits: Vec<(&Agent, Vec2, f32)> = vec![];
     for a1 in agents.iter() {
         for a2 in agents.iter() {
             if a1.pos != a2.pos {
@@ -134,7 +104,12 @@ fn collisions(agents: &Vec<Agent>/* , collision_list: &'b Vec<CollisionPair> */)
                 match contact {
                     Some(contact) => {
                         if contact.dist <= 0.0 {
-                            c += 1;
+                            contacts_num += 1;
+                            let p = Vec2::new(contact.point1.x, contact.point1.y);
+                            let n = contact.normal1.data.0[0];
+                            let norm = Vec2::new(n[0], n[1]);
+                            let penetration = contact.dist;
+                            hits.push((a1, norm, contact.dist))
                         }
                     },
                     None => {}
@@ -142,7 +117,8 @@ fn collisions(agents: &Vec<Agent>/* , collision_list: &'b Vec<CollisionPair> */)
             }
         }
     }
-    c
+    return hits;
+    //return contacts_num;
 }
 
 async fn wait(delta: f32) {
