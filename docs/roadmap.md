@@ -18,7 +18,7 @@
 - [ ] generations
 - [ ] genome coding
 - [ ] camera with user control
-- [ ] collision detection
+- [X] collision detection
 - [ ] neural network
 - [ ] genethics algorithm
 - [ ] input events

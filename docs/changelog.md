@@ -10,8 +10,9 @@
 * * *
 
 ##### v0.2
-
-- [x] circles collision (work in progress...)
+- [ ] camera movement
+- [ ] camera zoom in/zoom out
+- [x] circles collision
 - [x] using parry2d
 - [x] custom font
 - [x] draw some text info (title, fps)

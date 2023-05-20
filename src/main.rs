@@ -5,7 +5,7 @@ mod consts;
 mod util;
 mod agent;
 //mod particle;
-mod num;
+mod kinetic;
 mod ui;
 
 use std::thread::sleep;
@@ -14,7 +14,7 @@ use macroquad::miniquad::conf::Icon;
 use macroquad::prelude::*;
 use macroquad::window; 
 use macroquad::file::*;
-use num::*;
+use kinetic::*;
 use parry2d::query::details::contact_ball_ball;
 use crate::consts::*;
 use crate::util::*;
@@ -46,10 +46,8 @@ struct CollisionPair<'a> {
 #[macroquad::main(app_configuration)]
 async fn main() {
     init();
-    //let text_params = init_text_params().await;
+    let mut cam_pos: Vec2=Vec2::ZERO;
     let mut agents: Vec<Agent> = vec![];
-    let mut contacts: Vec<(Vec2, Vec2)> = vec![];
-    let mut collisions_list: Vec<CollisionPair> = vec![];
     let mut ui_state = UIState::new();
     for _ in 0..AGENTS_NUM {
         let agent = Agent::new();
@@ -59,11 +57,10 @@ async fn main() {
     loop {
         let delta = get_frame_time();
         let fps = get_fps();
-        //let mut contacts_num: usize = 0;
+        input(&mut cam_pos);
         update(&mut agents, delta);
-        let hits = collisions(&agents);
         ui_process(&mut ui_state, fps, delta);
-        draw(&agents, &contacts);
+        draw(&agents, &cam_pos);
         ui_draw();
         next_frame().await;
     }
@@ -74,21 +71,33 @@ fn init() {
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-fn draw(agents: &Vec<Agent>, contacts: &Vec<(Vec2, Vec2)>) {
+fn draw(agents: &Vec<Agent>, cam_pos: &Vec2) {
+    /* set_camera(&Camera2D { */
+    /*     //target: *cam_pos, */
+    /*      */
+    /*     zoom: Vec2 { x: 0.05, y: 0.05 }, */
+    /*     ..Default::default() */
+    /* }); */
     clear_background(BLACK);
     for a in agents.iter() {
         a.draw();
     }
-    for contact in contacts.iter() {
-        let p = contact.0;
-        let n = contact.1*10.0;
-        draw_line(p.x, p.y, p.x+n.x, p.y+n.y, 1.0, WHITE);
-    }
 }
 
 fn update(agents: &mut Vec<Agent>, dt: f32) {
+    let mut hit_map = CollisionsMap::new();
+    hit_map = map_collisions(agents);
     for a in agents.iter_mut() {
+        let uid = a.unique;
         a.update(dt);
+        match hit_map.get_collision(uid) {
+            Some(hit) => {
+                a.update_collision(&hit.normal, hit.overlap, dt);
+            },
+            None => {
+
+            }
+        }
     }
 }
 
@@ -98,9 +107,7 @@ fn collisions(agents: &Vec<Agent>) -> Vec<(&Agent, Vec2, f32)> {
     for a1 in agents.iter() {
         for a2 in agents.iter() {
             if a1.unique != a2.unique {
-                let pos1 = make_isometry(a1.pos.x, a1.pos.y, a1.rot);
-                let pos2 = make_isometry(a2.pos.x, a2.pos.y, a2.rot);
-                let contact = contact_circles(pos1, a1.size, pos2, a2.size);
+                let contact = contact_circles2(a1.pos, a1.rot, a1.size, a2.pos,a2.rot, a2.size);
                 match contact {
                     Some(contact) => {
                         if contact.dist <= 0.0 {
@@ -118,7 +125,47 @@ fn collisions(agents: &Vec<Agent>) -> Vec<(&Agent, Vec2, f32)> {
         }
     }
     return hits;
-    //return contacts_num;
+}
+
+fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
+    let mut hits: CollisionsMap = CollisionsMap::new();
+    for a1 in agents.iter() {
+        for a2 in agents.iter() {
+            if a1.unique != a2.unique {
+                let contact = contact_circles2(a1.pos, a1.rot, a1.size, a2.pos,a2.rot, a2.size);
+                match contact {
+                    Some(contact) => {
+                        if contact.dist <= 0.0 {
+                            let p = Vec2::new(contact.point1.x, contact.point1.y);
+                            let norm = contact.normal1.data.0[0];
+                            let n = Vec2::new(norm[0], norm[1]);
+                            let penetration = contact.dist;
+                            //hits.push((a1, norm, contact.dist));
+                            let hit: Hit=Hit{ normal: n, overlap: contact.dist };
+                            hits.add_collision(a1.unique, hit);
+                        }
+                    },
+                    None => {}
+                }
+            }
+        }
+    }
+    return hits;
+}
+
+fn input(cam_pos: &mut Vec2) {
+    if is_key_released(KeyCode::Up) {
+        cam_pos.y += 10.0;
+    }
+    if is_key_released(KeyCode::Down) {
+        cam_pos.y -= 10.0;
+    }
+    if is_key_released(KeyCode::Left) {
+        cam_pos.x -= 10.0;
+    }
+    if is_key_released(KeyCode::Right) {
+        cam_pos.x += 10.0;
+    }
 }
 
 async fn wait(delta: f32) {

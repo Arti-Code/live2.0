@@ -1,8 +1,13 @@
+use std::collections::HashMap;
+
 use parry2d::query::contact;
 use parry2d::{math::*, query::Contact}; 
 use parry2d::shape::*;
-use glam::Vec2;
+use glam;
 use nalgebra::*;
+use macroquad::math::Vec2;
+
+
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Rot {
@@ -57,7 +62,7 @@ impl Rot {
     }
 }
 
-pub fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32> {
+fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32> {
     let iso = Isometry2::new(Vector2::new(posx, posy), rotation);
     return iso;
 }
@@ -68,9 +73,44 @@ pub fn contact_circles(pos1: Isometry2<f32>, rad1: f32, pos2: Isometry2<f32>, ra
     let ball2 = Ball::new(rad2);
     let contact = contact(&pos1, &ball1, &pos2, &ball2, 0.0).unwrap();
     return contact;
-    //let c = match contact {
-    //    Some(c) => c.dist,
-    //    None => None,
-    //};
-    //c
+}
+
+pub fn contact_circles2(pos1: Vec2, rot1: f32, rad1: f32, pos2: Vec2, rot2: f32, rad2: f32) -> Option<Contact> {
+    let v1 = glam::Vec2::new(pos1.x, pos1.y);
+    let v2 = glam::Vec2::new(pos2.x, pos2.y);
+    let pos1 = make_isometry(v1.x, v1.y, rot1);
+    let pos2 = make_isometry(v2.x, v2.y, rot2);
+    let ball1 = Ball::new(rad1);
+    let ball2 = Ball::new(rad2);
+    let contact = contact(&pos1, &ball1, &pos2, &ball2, 0.0).unwrap();
+    return contact;
+    
+}
+
+
+pub struct Hit {
+    pub normal: macroquad::math::Vec2,
+    pub overlap: f32,
+}
+
+pub struct CollisionsMap {
+    contacts: HashMap<u32, Hit>,
+}
+
+impl CollisionsMap {
+    pub fn new() -> Self {
+        Self { contacts: HashMap::new() }
+    }
+    pub fn add_collision(&mut self, unique: u32, hit: Hit) {
+        self.contacts.insert(unique, hit);
+    }
+    pub fn clear(&mut self) {
+        self.contacts.clear();
+    }
+    pub fn remove_collision(&mut self, unique: u32) {
+        _ = self.contacts.remove(&unique);
+    }
+    pub fn get_collision(&mut self, unique: u32) -> Option<&Hit> {
+        return self.contacts.get(&unique);
+    } 
 }

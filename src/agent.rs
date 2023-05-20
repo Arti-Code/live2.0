@@ -105,8 +105,8 @@ impl Agent {
         self.pos = wrap_around(&self.pos);
         //self.contacts.clean();
     }
-    pub fn update_collision(&mut self, collision_normal: &Vec2, penetration: f32) {
-        self.pos += *collision_normal * penetration.abs();
+    pub fn update_collision(&mut self, collision_normal: &Vec2, penetration: f32, dt: f32) {
+        self.pos -= *collision_normal * penetration.abs() * self.vel * dt * 0.3;
     }
 
 /*     pub fn add_contact(&mut self, contact: Contact) {

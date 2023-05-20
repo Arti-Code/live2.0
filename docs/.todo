@@ -1,8 +1,8 @@
 Live2:
     0.2:
-        ☐ camera viewport
-        ☐ camera translation, zoom in/zoom out
-        ☐ keyboard input
+        ☐ camera viewport @started(23-05-20 17:48)
+        ☐ camera translation, zoom in/zoom out @started(23-05-20 17:48)
+        ☐ keyboard input @started(23-05-20 17:48)
         ☐ mouse input
         ✔ collisions between circles (parry2d)
         ☐ collisions between circles and polygons (parry2d)

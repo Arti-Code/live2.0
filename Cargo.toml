@@ -1,6 +1,6 @@
 [package]
 name = "live2"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2021"
 authors = ["Artur Gwoździowski"]
 
@@ -13,7 +13,8 @@ nalgebra = { version = "0.32.2", features = ["convert-glam020"] }
 glam = "0.24.0"
 egui-macroquad = "0.15.0"
 egui = "0.21.0"
-#nalgebra = "0.32.2"
+egui_extras = "0.21.0"
+image = { version = "0.24", features = ["jpeg", "png"] }
 
 [build-dependencies]
 embed-resource = "2.1.1"
