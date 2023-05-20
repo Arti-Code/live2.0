@@ -67,15 +67,7 @@ fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32
     return iso;
 }
 
-
-pub fn contact_circles(pos1: Isometry2<f32>, rad1: f32, pos2: Isometry2<f32>, rad2: f32) -> Option<Contact> {
-    let ball1 = Ball::new(rad1);
-    let ball2 = Ball::new(rad2);
-    let contact = contact(&pos1, &ball1, &pos2, &ball2, 0.0).unwrap();
-    return contact;
-}
-
-pub fn contact_circles2(pos1: Vec2, rot1: f32, rad1: f32, pos2: Vec2, rot2: f32, rad2: f32) -> Option<Contact> {
+pub fn contact_circles(pos1: Vec2, rot1: f32, rad1: f32, pos2: Vec2, rot2: f32, rad2: f32) -> Option<Contact> {
     let v1 = glam::Vec2::new(pos1.x, pos1.y);
     let v2 = glam::Vec2::new(pos2.x, pos2.y);
     let pos1 = make_isometry(v1.x, v1.y, rot1);

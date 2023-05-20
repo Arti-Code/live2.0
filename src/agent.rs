@@ -5,55 +5,8 @@ use macroquad::{prelude::*, color};
 use parry2d::shape::*;
 use crate::util::*;
 use crate::consts::*;
+use crate::timer::*;
 
-
-#[derive(Clone, Copy)]
-pub struct Contact {
-    pub normal: Vec2,
-    pub penetration: f32,
-}
-
-impl Contact {
-    pub fn new(normal: Vec2, penetration: f32) -> Self {
-        Self { 
-            normal: normal, 
-            penetration: penetration.abs(),
-        }
-    }
-}
-
-//#[derive(Clone, Copy)]
-pub struct Contacts {
-    pub contacts_list: Vec<Contact>,
-}
-
-impl Contacts {
-    pub fn new() -> Self {
-        Self { contacts_list: vec![] }
-    }
-    pub fn clean(&mut self) {
-        self.contacts_list.clear();
-    }
-    pub fn add_contact(&mut self, new_contact: Contact) {
-        self.contacts_list.push(new_contact);
-    }
-    pub fn add_contact2(&mut self, normal: Vec2, penetration: f32) {
-        let contact = Contact::new(normal, penetration);
-        self.add_contact(contact);
-    }
-    pub fn get_summarized_contact(&self) -> Contact {
-        let mut normal = Vec2::ZERO;
-        let mut penetration = 0.0;
-        for contact in self.contacts_list.iter() {
-            normal += contact.normal * contact.penetration 
-        }
-        penetration = normal.length();
-        normal.normalize_or_zero();
-        return Contact::new(normal, penetration);
-    }
-}
-
-//#[derive(Clone)]
 pub struct Agent {
     pub unique: u32,
     pub pos: Vec2,
@@ -63,7 +16,7 @@ pub struct Agent {
     pub color: color::Color,
     pub pulse: f32,
     pub shape: Ball,
-    //pub contacts: Contacts,
+    analize_timer: Timer,
 }
 
 impl Agent {
@@ -78,6 +31,7 @@ impl Agent {
             color: random_color(),
             pulse: rand::gen_range(0.0, 1.0),
             shape: Ball { radius: s },
+            analize_timer: Timer::new(0.3, true, true, true)
             //contacts: Contacts::new(),
         }
     }
@@ -95,21 +49,16 @@ impl Agent {
         draw_line(x1, y1, x2, y2, 0.75, self.color);
     }
     pub fn update(&mut self, dt: f32) {
+        if self.analize_timer.update(dt) {
+            self.rot += rand::gen_range(-1.0, 1.0)*AGENT_ROTATION*PI*dt;
+            self.rot = self.rot%(2.0*PI);
+        }
         self.pulse = (self.pulse + dt*0.25)%1.0;
-        self.rot += rand::gen_range(-1.0, 1.0)*AGENT_ROTATION*2.0*PI*dt;
-        self.rot = self.rot%(2.0*PI);
         let dir = Vec2::from_angle(self.rot);
         self.pos += dir * self.vel * dt;
-        //let reflection = self.contacts.get_summarized_contact();
-        //self.pos += reflection.normal * reflection.penetration;
         self.pos = wrap_around(&self.pos);
-        //self.contacts.clean();
     }
     pub fn update_collision(&mut self, collision_normal: &Vec2, penetration: f32, dt: f32) {
         self.pos -= *collision_normal * penetration.abs() * self.vel * dt * 0.3;
     }
-
-/*     pub fn add_contact(&mut self, contact: Contact) {
-        self.contacts.add_contact(contact);
-    } */
 }

@@ -4,7 +4,7 @@
 mod consts;
 mod util;
 mod agent;
-//mod particle;
+mod timer;
 mod kinetic;
 mod ui;
 
@@ -25,6 +25,7 @@ use std::collections::VecDeque;
 use parry2d::query::*;
 use parry2d::shape::*;
 use crate::ui::*;
+use crate::timer::*;
 
 fn app_configuration() -> Conf {
     Conf{
@@ -49,6 +50,7 @@ async fn main() {
     let mut cam_pos: Vec2=Vec2::ZERO;
     let mut agents: Vec<Agent> = vec![];
     let mut ui_state = UIState::new();
+    let mut main_timer = Timer::new(60.0, true, true, true);
     for _ in 0..AGENTS_NUM {
         let agent = Agent::new();
         agents.push(agent);
@@ -58,8 +60,8 @@ async fn main() {
         let delta = get_frame_time();
         let fps = get_fps();
         input(&mut cam_pos);
-        update(&mut agents, delta);
-        ui_process(&mut ui_state, fps, delta);
+        update(&mut agents, delta, &mut main_timer);
+        ui_process(&mut ui_state, fps, delta, main_timer.time, Some(&agents[0]));
         draw(&agents, &cam_pos);
         ui_draw();
         next_frame().await;
@@ -72,19 +74,16 @@ fn init() {
 }
 
 fn draw(agents: &Vec<Agent>, cam_pos: &Vec2) {
-    /* set_camera(&Camera2D { */
-    /*     //target: *cam_pos, */
-    /*      */
-    /*     zoom: Vec2 { x: 0.05, y: 0.05 }, */
-    /*     ..Default::default() */
-    /* }); */
     clear_background(BLACK);
     for a in agents.iter() {
         a.draw();
     }
 }
 
-fn update(agents: &mut Vec<Agent>, dt: f32) {
+fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer) {
+    if timer.update(dt) {
+        println!("TIMER!");
+    }
     let mut hit_map = CollisionsMap::new();
     hit_map = map_collisions(agents);
     for a in agents.iter_mut() {
@@ -101,38 +100,12 @@ fn update(agents: &mut Vec<Agent>, dt: f32) {
     }
 }
 
-fn collisions(agents: &Vec<Agent>) -> Vec<(&Agent, Vec2, f32)> {
-    let mut contacts_num: usize = 0;
-    let mut hits: Vec<(&Agent, Vec2, f32)> = vec![];
-    for a1 in agents.iter() {
-        for a2 in agents.iter() {
-            if a1.unique != a2.unique {
-                let contact = contact_circles2(a1.pos, a1.rot, a1.size, a2.pos,a2.rot, a2.size);
-                match contact {
-                    Some(contact) => {
-                        if contact.dist <= 0.0 {
-                            contacts_num += 1;
-                            let p = Vec2::new(contact.point1.x, contact.point1.y);
-                            let n = contact.normal1.data.0[0];
-                            let norm = Vec2::new(n[0], n[1]);
-                            let penetration = contact.dist;
-                            hits.push((a1, norm, contact.dist))
-                        }
-                    },
-                    None => {}
-                }
-            }
-        }
-    }
-    return hits;
-}
-
 fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
     let mut hits: CollisionsMap = CollisionsMap::new();
     for a1 in agents.iter() {
         for a2 in agents.iter() {
             if a1.unique != a2.unique {
-                let contact = contact_circles2(a1.pos, a1.rot, a1.size, a2.pos,a2.rot, a2.size);
+                let contact = contact_circles(a1.pos, a1.rot, a1.size, a2.pos,a2.rot, a2.size);
                 match contact {
                     Some(contact) => {
                         if contact.dist <= 0.0 {
@@ -156,15 +129,19 @@ fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
 fn input(cam_pos: &mut Vec2) {
     if is_key_released(KeyCode::Up) {
         cam_pos.y += 10.0;
+        println!("UP");
     }
     if is_key_released(KeyCode::Down) {
         cam_pos.y -= 10.0;
+        println!("DOWN");
     }
     if is_key_released(KeyCode::Left) {
         cam_pos.x -= 10.0;
+        println!("LEFT");
     }
     if is_key_released(KeyCode::Right) {
         cam_pos.x += 10.0;
+        println!("RIGHT");
     }
 }
 
