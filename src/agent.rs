@@ -6,17 +6,20 @@ use parry2d::shape::*;
 use crate::util::*;
 use crate::consts::*;
 use crate::timer::*;
+use crate::neuro::*;
 
 pub struct Agent {
     pub unique: u32,
     pub pos: Vec2,
     pub rot: f32,
     pub vel: f32,
+    pub ang_vel: f32,
     pub size: f32,
     pub color: color::Color,
     pub pulse: f32,
     pub shape: Ball,
     analize_timer: Timer,
+    analizer: DummyNetwork,
 }
 
 impl Agent {
@@ -27,12 +30,13 @@ impl Agent {
             pos: random_position(SCREEN_WIDTH, SCREEN_HEIGHT),
             rot: random_rotation(),
             vel: rand::gen_range(0.0, 1.0)*AGENT_SPEED,
+            ang_vel: 0.0,
             size: s,
             color: random_color(),
             pulse: rand::gen_range(0.0, 1.0),
             shape: Ball { radius: s },
-            analize_timer: Timer::new(0.3, true, true, true)
-            //contacts: Contacts::new(),
+            analize_timer: Timer::new(0.3, true, true, true),
+            analizer: DummyNetwork::new(2),
         }
     }
     pub fn draw(&self) {
@@ -50,9 +54,19 @@ impl Agent {
     }
     pub fn update(&mut self, dt: f32) {
         if self.analize_timer.update(dt) {
-            self.rot += rand::gen_range(-1.0, 1.0)*AGENT_ROTATION*PI*dt;
-            self.rot = self.rot%(2.0*PI);
+            let outputs = self.analizer.analize();
+            if outputs[0] >= 0.0 {
+                self.vel = outputs[0] * AGENT_SPEED;
+            }
+            else {
+                self.vel = 0.0;
+            }
+            self.ang_vel = outputs[1] * AGENT_ROTATION;
+            //self.rot += rand::gen_range(-1.0, 1.0)*AGENT_ROTATION*PI*dt;
+            //self.rot = self.rot%(2.0*PI);
         }
+        self.rot += self.ang_vel * dt;
+        self.rot = self.rot % (2.0*PI);
         self.pulse = (self.pulse + dt*0.25)%1.0;
         let dir = Vec2::from_angle(self.rot);
         self.pos += dir * self.vel * dt;

@@ -7,6 +7,7 @@ mod agent;
 mod timer;
 mod kinetic;
 mod ui;
+mod neuro;
 
 use std::thread::sleep;
 use std::time::Duration;
