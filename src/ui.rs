@@ -1,7 +1,8 @@
+
 use std::path::Path;
 
 use egui_macroquad;
-
+use macroquad::prelude::*;
 use egui::{self, Context};
 use egui::{RichText, Color32};
 use egui_extras::image::RetainedImage;
@@ -9,11 +10,13 @@ use image::open;
 
 use crate::agent::Agent;
 use crate::consts::{SCREEN_WIDTH, SCREEN_HEIGHT};
+use crate::progress_bar::*;
 
 
 pub struct UIState {
     pub performance: bool,
     pub inspect: bool,
+    pub mouse: bool,
     pub quit: bool,
 }
 
@@ -22,36 +25,22 @@ impl UIState {
         Self {
             performance: false,
             inspect: false,
+            mouse: false,
             quit: false,
         }
     }
 }
 
-/* pub struct UILogo {
-    texture: Option<egui::TextureHandle>,
+pub struct MouseState {
+    pub pos: Vec2,
 }
 
-impl UILogo {
-    fn new(&mut self, ui: &mut egui::Ui) {
-        let texture: &egui::TextureHandle = self.texture.get_or_insert_with(|| {
-            // Load the texture only once.
-            ui.ctx().load_texture(
-                "my-image",
-                egui::ColorImage::example(),
-                Default::default()
-            )
-        });
-
-        // Show the image:
-        ui.image(texture, texture.size_vec2());
-    }
-} */
-
-pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, time: f32, agent: Option<&Agent>) {
+pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, time: f32, agent: Option<&Agent>, mouse_state: &MouseState) {
     egui_macroquad::ui(|egui_ctx| {
         build_top_menu(egui_ctx, ui_state);
         build_quit_window(egui_ctx, ui_state);
         build_monit_window(egui_ctx, ui_state, fps, delta, time);
+        build_mouse_window(egui_ctx, ui_state, mouse_state);
         match agent {
             Some(agent) => {
                 build_inspect_window(egui_ctx, ui_state, agent)
@@ -90,6 +79,9 @@ fn build_top_menu(egui_ctx: &Context, ui_state: &mut UIState) {
                     if ui.button(RichText::new("Inspector").strong().color(Color32::YELLOW)).clicked() {
                         ui_state.inspect = !ui_state.inspect;
                     }
+                    if ui.button(RichText::new("Mouse").strong().color(Color32::YELLOW)).clicked() {
+                        ui_state.mouse = !ui_state.mouse;
+                    }
                 });
                 ui.add_space(10.0);
                 ui.separator();
@@ -117,13 +109,24 @@ fn build_inspect_window(egui_ctx: &Context, ui_state: &mut UIState, agent: &Agen
         egui::Window::new("Inspector").default_pos((200.0, 50.0))
         .default_width(125.0)
         .show(egui_ctx, |ui| {
-            ui.label(format!("ENERGY: 100/100"));
             ui.label(format!("ROTATION: {}", ((rot*10.0).round())/10.0));
             ui.label(format!("SIZE: {}", size));
+            ui.label(format!("ENERGY: {}/{}", agent.eng.round(), agent.max_eng.round()));
+            let eng_prog = agent.eng / agent.max_eng;
+            ui.add(ProgressBar::new(eng_prog).desired_width(100.0).fill(Color32::BLUE).show_percentage());
         });
     }    
 }
 
+fn build_mouse_window(egui_ctx: &Context, ui_state: &mut UIState, mouse_state: &MouseState) {
+    if ui_state.mouse {
+        egui::Window::new("Mouse").default_pos((350.0, 50.0))
+        .default_width(125.0)
+        .show(egui_ctx, |ui| {
+            ui.label(format!("X: {} | Y: {}", mouse_state.pos.x, mouse_state.pos.y));
+        });
+    }    
+}
 
 fn build_quit_window(egui_ctx: &Context, ui_state: &mut UIState) {
         if ui_state.quit {

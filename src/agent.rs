@@ -15,6 +15,8 @@ pub struct Agent {
     pub vel: f32,
     pub ang_vel: f32,
     pub size: f32,
+    pub max_eng: f32,
+    pub eng: f32,
     pub color: color::Color,
     pub pulse: f32,
     pub shape: Ball,
@@ -32,6 +34,8 @@ impl Agent {
             vel: rand::gen_range(0.0, 1.0)*AGENT_SPEED,
             ang_vel: 0.0,
             size: s,
+            max_eng: s.powi(2)*10.0,
+            eng: s.powi(2)*10.0,
             color: random_color(),
             pulse: rand::gen_range(0.0, 1.0),
             shape: Ball { radius: s },
@@ -62,8 +66,11 @@ impl Agent {
                 self.vel = 0.0;
             }
             self.ang_vel = outputs[1] * AGENT_ROTATION;
-            //self.rot += rand::gen_range(-1.0, 1.0)*AGENT_ROTATION*PI*dt;
-            //self.rot = self.rot%(2.0*PI);
+        }
+        if self.eng > 0.0 {
+            self.eng -= self.size * 0.1 * dt;
+        } else {
+            self.eng = 0.0;
         }
         self.rot += self.ang_vel * dt;
         self.rot = self.rot % (2.0*PI);

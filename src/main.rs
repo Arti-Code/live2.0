@@ -8,6 +8,7 @@ mod timer;
 mod kinetic;
 mod ui;
 mod neuro;
+mod progress_bar;
 
 use std::thread::sleep;
 use std::time::Duration;
@@ -52,6 +53,8 @@ async fn main() {
     let mut agents: Vec<Agent> = vec![];
     let mut ui_state = UIState::new();
     let mut main_timer = Timer::new(60.0, true, true, true);
+    let mut selected: u8=0;
+    let mut mouse_state = MouseState { pos: Vec2::ZERO};
     for _ in 0..AGENTS_NUM {
         let agent = Agent::new();
         agents.push(agent);
@@ -60,9 +63,12 @@ async fn main() {
     loop {
         let delta = get_frame_time();
         let fps = get_fps();
-        input(&mut cam_pos);
+        let (mouse_x, mouse_y) = mouse_position();
+        mouse_state.pos = Vec2::new(mouse_x, mouse_y);
+        let mut agents_num = agents.len() as u8;
+        input(&mut cam_pos, &mut selected, &mut agents_num);
         update(&mut agents, delta, &mut main_timer);
-        ui_process(&mut ui_state, fps, delta, main_timer.time, Some(&agents[0]));
+        ui_process(&mut ui_state, fps, delta, main_timer.time, Some(&agents[selected as usize]), &mouse_state);
         draw(&agents, &cam_pos);
         ui_draw();
         next_frame().await;
@@ -127,7 +133,7 @@ fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
     return hits;
 }
 
-fn input(cam_pos: &mut Vec2) {
+fn input(cam_pos: &mut Vec2, agent_idx: &mut u8, max_agent_idx: &mut u8) {
     if is_key_released(KeyCode::Up) {
         cam_pos.y += 10.0;
         println!("UP");
@@ -143,6 +149,16 @@ fn input(cam_pos: &mut Vec2) {
     if is_key_released(KeyCode::Right) {
         cam_pos.x += 10.0;
         println!("RIGHT");
+    }
+    if is_key_released(KeyCode::D) {
+        if agent_idx < max_agent_idx {
+            *agent_idx += 1;
+        }
+    }
+    if is_key_released(KeyCode::A) {
+        if agent_idx > &mut 0 {
+            *agent_idx -= 1;
+        }
     }
 }
 
