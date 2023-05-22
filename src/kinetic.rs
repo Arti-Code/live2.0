@@ -76,7 +76,19 @@ pub fn contact_circles(pos1: Vec2, rot1: f32, rad1: f32, pos2: Vec2, rot2: f32, 
     let ball2 = Ball::new(rad2);
     let contact = contact(&pos1, &ball1, &pos2, &ball2, 0.0).unwrap();
     return contact;
-    
+}
+
+pub fn contact_mouse(mouse_pos: Vec2, target_pos: Vec2, target_rad: f32) -> bool {
+    let v1 = glam::Vec2::new(mouse_pos.x, mouse_pos.y);
+    let v2 = glam::Vec2::new(target_pos.x, target_pos.y);
+    let pos1 = make_isometry(v1.x, v1.y, 0.0 );
+    let pos2 = make_isometry(v2.x, v2.y, 0.0);
+    let ball1 = Ball::new(2.0);
+    let ball2 = Ball::new(target_rad);
+    match contact(&pos1, &ball1, &pos2, &ball2, 0.0).unwrap() {
+        Some(_) => true,
+        None => false,
+    }
 }
 
 

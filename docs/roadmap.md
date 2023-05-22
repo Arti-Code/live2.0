@@ -11,7 +11,7 @@
 
 - [ ] biomes
 - [ ] sensing
-- [ ] fittnes function
+- [ ] fitness function
 - [ ] mutation
 - [ ] recombination
 - [ ] species

@@ -3,10 +3,10 @@ Live2:
         ☐ camera viewport @started(23-05-20 17:48)
         ☐ camera translation, zoom in/zoom out @started(23-05-20 17:48)
         ☐ keyboard input @started(23-05-20 17:48)
-        ☐ mouse input
+        ☐ mouse input @started(23-05-21 13:38)
         ✔ collisions between circles (parry2d)
         ☐ collisions between circles and polygons (parry2d)
-        ☐ agent's energy
+        ☐ agent's energy @started(23-05-21 13:38)
         ☐ survability
         ☐ sense of vision
         ☐ attack

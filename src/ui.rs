@@ -17,6 +17,7 @@ pub struct UIState {
     pub performance: bool,
     pub inspect: bool,
     pub mouse: bool,
+    pub create: bool,
     pub quit: bool,
 }
 
@@ -26,6 +27,7 @@ impl UIState {
             performance: false,
             inspect: false,
             mouse: false,
+            create: false,
             quit: false,
         }
     }
@@ -34,6 +36,8 @@ impl UIState {
 pub struct MouseState {
     pub pos: Vec2,
 }
+
+static V: Vec2 = Vec2::ZERO;
 
 pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, time: f32, agent: Option<&Agent>, mouse_state: &MouseState) {
     egui_macroquad::ui(|egui_ctx| {
@@ -81,6 +85,9 @@ fn build_top_menu(egui_ctx: &Context, ui_state: &mut UIState) {
                     }
                     if ui.button(RichText::new("Mouse").strong().color(Color32::YELLOW)).clicked() {
                         ui_state.mouse = !ui_state.mouse;
+                    }
+                    if ui.button(RichText::new("Creator").strong().color(Color32::YELLOW)).clicked() {
+                        ui_state.create = !ui_state.create;
                     }
                 });
                 ui.add_space(10.0);
@@ -148,6 +155,23 @@ fn build_quit_window(egui_ctx: &Context, ui_state: &mut UIState) {
                 });
             });
         }    
+}
+
+fn build_create_window(egui_ctx: &Context, ui_state: &mut UIState) {
+    if ui_state.create {
+        egui::Window::new("Creator").default_pos((SCREEN_WIDTH/2.0+100.0, SCREEN_HEIGHT/4.0))
+        .default_width(125.0)
+        .show(egui_ctx, |ui| {
+            ui.horizontal(|head| {
+                head.heading("Spawn new creature");
+            });
+            ui.horizontal(|mid| {
+                if mid.button(RichText::new("SPAWN").strong().color(Color32::LIGHT_GREEN)).clicked() {
+                    ui_state.create = false;
+                }
+            });
+        });
+    }    
 }
 
 pub fn ui_draw() {

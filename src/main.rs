@@ -1,6 +1,7 @@
 
 #![allow(unused)]
 
+mod world;
 mod consts;
 mod util;
 mod agent;
@@ -9,7 +10,9 @@ mod kinetic;
 mod ui;
 mod neuro;
 mod progress_bar;
+mod prelude;
 
+use std::f32::consts::PI;
 use std::thread::sleep;
 use std::time::Duration;
 use macroquad::miniquad::conf::Icon;
@@ -18,10 +21,11 @@ use macroquad::window;
 use macroquad::file::*;
 use kinetic::*;
 use parry2d::query::details::contact_ball_ball;
+use crate::prelude::*;
+use crate::world::*;
 use crate::consts::*;
 use crate::util::*;
 use crate::agent::*;
-//use crate::particle::*;
 use macroquad::time::*;
 use std::collections::VecDeque;
 use parry2d::query::*;
@@ -40,11 +44,7 @@ fn app_configuration() -> Conf {
     }
 }
 
-struct CollisionPair<'a> {
-    object1: &'a Agent,
-    object2: &'a Agent,
-    overlap: f32,
-}
+
 
 #[macroquad::main(app_configuration)]
 async fn main() {
@@ -53,6 +53,7 @@ async fn main() {
     let mut agents: Vec<Agent> = vec![];
     let mut ui_state = UIState::new();
     let mut main_timer = Timer::new(60.0, true, true, true);
+    let mut sel_time: f32 = 0.0;
     let mut selected: u8=0;
     let mut mouse_state = MouseState { pos: Vec2::ZERO};
     for _ in 0..AGENTS_NUM {
@@ -66,10 +67,10 @@ async fn main() {
         let (mouse_x, mouse_y) = mouse_position();
         mouse_state.pos = Vec2::new(mouse_x, mouse_y);
         let mut agents_num = agents.len() as u8;
-        input(&mut cam_pos, &mut selected, &mut agents_num);
-        update(&mut agents, delta, &mut main_timer);
+        input(&mut cam_pos, &mut selected, &mut agents_num, &agents);
+        update(&mut agents, delta, &mut main_timer, &mut sel_time);
         ui_process(&mut ui_state, fps, delta, main_timer.time, Some(&agents[selected as usize]), &mouse_state);
-        draw(&agents, &cam_pos);
+        draw(&agents, &cam_pos, selected, sel_time);
         ui_draw();
         next_frame().await;
     }
@@ -80,17 +81,23 @@ fn init() {
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-fn draw(agents: &Vec<Agent>, cam_pos: &Vec2) {
+fn draw(agents: &Vec<Agent>, cam_pos: &Vec2, selected: u8, sel_time: f32) {
     clear_background(BLACK);
     for a in agents.iter() {
         a.draw();
     }
+    let selected_agent = agents.get(selected as usize).unwrap();
+    let pos = Vec2::new(selected_agent.pos.x, selected_agent.pos.y);
+    let s = selected_agent.size;
+    draw_circle_lines(pos.x, pos.y, 3.0*s+(sel_time.sin()*s*1.0), 1.0, SKYBLUE);
 }
 
-fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer) {
+fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer, sel_time: &mut f32) {
     if timer.update(dt) {
         println!("TIMER!");
     }
+    *sel_time += dt*4.0;
+    *sel_time = *sel_time%(2.0*PI as f32);
     let mut hit_map = CollisionsMap::new();
     hit_map = map_collisions(agents);
     for a in agents.iter_mut() {
@@ -133,7 +140,7 @@ fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
     return hits;
 }
 
-fn input(cam_pos: &mut Vec2, agent_idx: &mut u8, max_agent_idx: &mut u8) {
+fn input(cam_pos: &mut Vec2, agent_idx: &mut u8, max_agent_idx: &mut u8, agents: &Vec<Agent>) {
     if is_key_released(KeyCode::Up) {
         cam_pos.y += 10.0;
         println!("UP");
@@ -158,6 +165,18 @@ fn input(cam_pos: &mut Vec2, agent_idx: &mut u8, max_agent_idx: &mut u8) {
     if is_key_released(KeyCode::A) {
         if agent_idx > &mut 0 {
             *agent_idx -= 1;
+        }
+    }
+    if is_mouse_button_released(MouseButton::Left) {
+        let (mouse_posx, mouse_posy) = mouse_position();
+        let mouse_pos = Vec2::new(mouse_posx, mouse_posy);
+        let mut i: u8 = 0;
+        for agent in agents.iter() {
+            if contact_mouse(mouse_pos, agent.pos, agent.size) {
+                *agent_idx = i;
+                break; 
+            }
+            i += 1;
         }
     }
 }
