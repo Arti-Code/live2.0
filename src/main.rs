@@ -1,6 +1,7 @@
 
 #![allow(unused)]
 
+mod sim;
 mod world;
 mod consts;
 mod util;
@@ -21,6 +22,7 @@ use macroquad::window;
 use macroquad::file::*;
 use kinetic::*;
 use parry2d::query::details::contact_ball_ball;
+use crate::sim::*;
 use crate::prelude::*;
 use crate::world::*;
 use crate::consts::*;
@@ -44,7 +46,17 @@ fn app_configuration() -> Conf {
     }
 }
 
+pub struct Signals {
+    pub spawn_agent: bool,
+}
 
+impl Signals {
+    pub fn new() -> Self {
+        Self {
+            spawn_agent: false,
+        }
+    }
+}
 
 #[macroquad::main(app_configuration)]
 async fn main() {
@@ -52,6 +64,7 @@ async fn main() {
     let mut cam_pos: Vec2=Vec2::ZERO;
     let mut agents: Vec<Agent> = vec![];
     let mut ui_state = UIState::new();
+    let mut signals = Signals::new();
     let mut main_timer = Timer::new(60.0, true, true, true);
     let mut sel_time: f32 = 0.0;
     let mut selected: u8=0;
@@ -67,9 +80,20 @@ async fn main() {
         let (mouse_x, mouse_y) = mouse_position();
         mouse_state.pos = Vec2::new(mouse_x, mouse_y);
         let mut agents_num = agents.len() as u8;
+        if signals.spawn_agent {
+            signals.spawn_agent = false;
+            let agent = Agent::new();
+            agents.push(agent);
+        }
         input(&mut cam_pos, &mut selected, &mut agents_num, &agents);
         update(&mut agents, delta, &mut main_timer, &mut sel_time);
-        ui_process(&mut ui_state, fps, delta, main_timer.time, Some(&agents[selected as usize]), &mouse_state);
+        if agents.len() < 5 {
+            let agent = Agent::new();
+            agents.push(agent);
+            selected = 0;
+        }
+        let selected_agent = agents.get(selected as usize);
+        ui_process(&mut ui_state, fps, delta, main_timer.time, selected_agent, &mouse_state, &mut signals);
         draw(&agents, &cam_pos, selected, sel_time);
         ui_draw();
         next_frame().await;
@@ -86,16 +110,21 @@ fn draw(agents: &Vec<Agent>, cam_pos: &Vec2, selected: u8, sel_time: f32) {
     for a in agents.iter() {
         a.draw();
     }
-    let selected_agent = agents.get(selected as usize).unwrap();
-    let pos = Vec2::new(selected_agent.pos.x, selected_agent.pos.y);
-    let s = selected_agent.size;
-    draw_circle_lines(pos.x, pos.y, 3.0*s+(sel_time.sin()*s*1.0), 1.0, SKYBLUE);
+    match agents.get(selected as usize) {
+        Some(selected_agent) => {
+            let pos = Vec2::new(selected_agent.pos.x, selected_agent.pos.y);
+            let s = selected_agent.size;
+            draw_circle_lines(pos.x, pos.y, 2.0*s+(sel_time.sin()*s*0.5), 1.0, ORANGE);
+        },
+        None => {},
+    };
 }
 
 fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer, sel_time: &mut f32) {
     if timer.update(dt) {
         println!("TIMER!");
     }
+    let mut to_kill: Vec<u32> = vec![];
     *sel_time += dt*4.0;
     *sel_time = *sel_time%(2.0*PI as f32);
     let mut hit_map = CollisionsMap::new();
@@ -112,6 +141,11 @@ fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer, sel_time: &mut f3
             }
         }
     }
+    agents.retain(|a| a.alife == true);
+    //if let Some(index) = agents.iter_mut().position(|b| b.unique == a.unique) {
+    //            agents.swap_remove(index);
+    //        }
+
 }
 
 fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {

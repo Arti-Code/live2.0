@@ -22,6 +22,7 @@ pub struct Agent {
     pub shape: Ball,
     analize_timer: Timer,
     analizer: DummyNetwork,
+    pub alife: bool,
 }
 
 impl Agent {
@@ -41,6 +42,7 @@ impl Agent {
             shape: Ball { radius: s },
             analize_timer: Timer::new(0.3, true, true, true),
             analizer: DummyNetwork::new(2),
+            alife: true,
         }
     }
     pub fn draw(&self) {
@@ -56,7 +58,7 @@ impl Agent {
         draw_circle_lines(x0, y0, (self.size/2.0)*pulse.abs(), 0.5, self.color);
         draw_line(x1, y1, x2, y2, 0.75, self.color);
     }
-    pub fn update(&mut self, dt: f32) {
+    pub fn update(&mut self, dt: f32){
         if self.analize_timer.update(dt) {
             let outputs = self.analizer.analize();
             if outputs[0] >= 0.0 {
@@ -67,17 +69,18 @@ impl Agent {
             }
             self.ang_vel = outputs[1] * AGENT_ROTATION;
         }
-        if self.eng > 0.0 {
-            self.eng -= self.size * 0.1 * dt;
-        } else {
-            self.eng = 0.0;
-        }
         self.rot += self.ang_vel * dt;
         self.rot = self.rot % (2.0*PI);
         self.pulse = (self.pulse + dt*0.25)%1.0;
         let dir = Vec2::from_angle(self.rot);
         self.pos += dir * self.vel * dt;
         self.pos = wrap_around(&self.pos);
+        if self.eng > 0.0 {
+            self.eng -= self.size * 1.0 * dt;
+        } else {
+            self.eng = 0.0;
+            self.alife = false;
+        }
     }
     pub fn update_collision(&mut self, collision_normal: &Vec2, penetration: f32, dt: f32) {
         self.pos -= *collision_normal * penetration.abs() * self.vel * dt * 0.3;
