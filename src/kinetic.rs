@@ -91,6 +91,69 @@ pub fn contact_mouse(mouse_pos: Vec2, target_pos: Vec2, target_rad: f32) -> bool
     }
 }
 
+pub enum DetectionTypes {
+    Enemy,
+    Food,
+    Rock,
+}
+
+pub struct Detection {
+    pub distance: f32,
+    pub angle: f32,
+}
+
+impl Detection {
+    pub fn new(distance: f32, angle: f32) -> Self {
+        Self {
+            distance,
+            angle,
+        }
+    }
+    pub fn add_closer(&mut self, distance: f32, angle: f32) {
+        if self.distance > distance {
+            self.distance = distance;
+            self.angle = angle;
+        }
+    }
+}
+
+pub struct DetectionsMap {
+    pub detections: HashMap<u32, Detection>,
+}
+
+impl DetectionsMap {
+    pub fn new() -> Self {
+        Self { detections: HashMap::new() }
+    }
+    pub fn add_detection(&mut self, unique: u32, detection: Detection) {
+        let old_detection = self.detections.get(&unique);
+        let actual = match old_detection {
+            Some(actual_detection) if actual_detection.distance > detection.distance => {
+                detection
+            },
+            Some(actual_detection) if actual_detection.distance <= detection.distance => {
+                Detection::new(actual_detection.distance, actual_detection.angle)
+            },
+            Some(_) => {
+                Detection::new(f32::NAN, f32::NAN)
+            }
+            None => {
+                detection
+            }
+        };
+        self.detections.insert(unique, actual);
+    }
+    pub fn clear(&mut self) {
+        self.detections.clear();
+    }
+    pub fn remove_detection(&mut self, unique: u32) {
+        _ = self.detections.remove(&unique);
+    }
+    pub fn get_detection(&mut self, unique: u32) -> Option<&Detection> {
+        return self.detections.get(&unique);
+    } 
+}
+
 
 pub struct Hit {
     pub normal: macroquad::math::Vec2,

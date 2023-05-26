@@ -108,7 +108,8 @@ fn init() {
 fn draw(agents: &Vec<Agent>, cam_pos: &Vec2, selected: u8, sel_time: f32) {
     clear_background(BLACK);
     for a in agents.iter() {
-        a.draw();
+        let draw_field_of_view: bool = check_selected(a, agents, selected);
+        a.draw(draw_field_of_view);
     }
     match agents.get(selected as usize) {
         Some(selected_agent) => {
@@ -118,6 +119,23 @@ fn draw(agents: &Vec<Agent>, cam_pos: &Vec2, selected: u8, sel_time: f32) {
         },
         None => {},
     };
+}
+
+fn check_selected(agent: &Agent, agents: &Vec<Agent>, selected: u8) -> bool {
+    match agents.get(selected as usize) {
+        Some(selected_agent) if agent.unique == selected_agent.unique => {
+            return true;
+        },
+        Some(selected_agent) if agent.unique != selected_agent.unique => {
+            return false;
+        },
+        Some(_) => {
+            return false;
+        },
+        None => {
+            return false;
+        },
+    }
 }
 
 fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer, sel_time: &mut f32) {
@@ -142,10 +160,18 @@ fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer, sel_time: &mut f3
         }
     }
     agents.retain(|a| a.alife == true);
-    //if let Some(index) = agents.iter_mut().position(|b| b.unique == a.unique) {
-    //            agents.swap_remove(index);
-    //        }
+/*     for agent in agents.iter() {
+        agent.detect(agents);
+    } */
 
+}
+
+fn detect(agents: &mut Vec<Agent>){
+    for agent1 in agents.iter() {
+        for agent2 in agents.iter() {
+            
+        }
+    }
 }
 
 fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
