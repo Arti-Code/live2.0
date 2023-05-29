@@ -88,7 +88,7 @@ async fn main() {
         }
         input(&mut cam_pos, &mut selected, &agents);
         update(&mut agents, delta, &mut main_timer, &mut sel_time);
-        if agents.len() < 5 {
+        if agents.len() < AGENTS_NUM_MIN {
             let agent = Agent::new();
             agents.push(agent);
             selected = 0;
