@@ -68,7 +68,7 @@ async fn main() {
     let mut signals = Signals::new();
     let mut main_timer = Timer::new(60.0, true, true, true);
     let mut sel_time: f32 = 0.0;
-    let mut selected: u8=0;
+    let mut selected: u32=0;
     let mut mouse_state = MouseState { pos: Vec2::ZERO};
     for _ in 0..AGENTS_NUM {
         let agent: Agent = Agent::new();
@@ -86,9 +86,9 @@ async fn main() {
             let agent = Agent::new();
             agents.push(agent);
         }
-        input(&mut cam_pos, &mut selected, &mut agents_num, &agents);
+        input(&mut cam_pos, &mut selected, &agents);
         update(&mut agents, delta, &mut main_timer, &mut sel_time);
-        if agents.len() < 5 {
+        if agents.len() < AGENTS_NUM_MIN {
             let agent = Agent::new();
             agents.push(agent);
             selected = 0;
@@ -106,10 +106,13 @@ fn init() {
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-fn draw(agents: &Vec<Agent>, cam_pos: &Vec2, selected: u8, sel_time: f32) {
+fn draw(agents: &Vec<Agent>, cam_pos: &Vec2, selected: u32, sel_time: f32) {
     clear_background(BLACK);
     for a in agents.iter() {
-        let draw_field_of_view: bool = check_selected(a, agents, selected);
+        let mut draw_field_of_view: bool=false;
+        if a.unique == selected {
+            draw_field_of_view = true;
+        };
         a.draw(draw_field_of_view);
     }
     match agents.get(selected as usize) {
@@ -122,7 +125,7 @@ fn draw(agents: &Vec<Agent>, cam_pos: &Vec2, selected: u8, sel_time: f32) {
     };
 }
 
-fn check_selected(agent: &Agent, agents: &Vec<Agent>, selected: u8) -> bool {
+fn check_selected(agent: &Agent, agents: &Vec<Agent>, selected: u32) -> bool {
     match agents.get(selected as usize) {
         Some(selected_agent) if agent.unique == selected_agent.unique => {
             return true;
@@ -231,7 +234,7 @@ fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
     return hits;
 }
 
-fn input(cam_pos: &mut Vec2, agent_idx: &mut u8, max_agent_idx: &mut u8, agents: &Vec<Agent>) {
+fn input(cam_pos: &mut Vec2, agent_idx: &mut u32, agents: &Vec<Agent>) {
     if is_key_released(KeyCode::Up) {
         cam_pos.y += 10.0;
         println!("UP");
@@ -248,26 +251,26 @@ fn input(cam_pos: &mut Vec2, agent_idx: &mut u8, max_agent_idx: &mut u8, agents:
         cam_pos.x += 10.0;
         println!("RIGHT");
     }
-    if is_key_released(KeyCode::D) {
-        if agent_idx < max_agent_idx {
-            *agent_idx += 1;
-        }
-    }
-    if is_key_released(KeyCode::A) {
-        if agent_idx > &mut 0 {
-            *agent_idx -= 1;
-        }
-    }
+//    if is_key_released(KeyCode::D) {
+//        if agent_idx < max_agent_idx {
+//            *agent_idx += 1;
+//        }
+//    }
+//    if is_key_released(KeyCode::A) {
+//        if agent_idx > &mut 0 {
+//            *agent_idx -= 1;
+//        }
+//    }
     if is_mouse_button_released(MouseButton::Left) {
         let (mouse_posx, mouse_posy) = mouse_position();
         let mouse_pos = Vec2::new(mouse_posx, mouse_posy);
-        let mut i: u8 = 0;
+        let mut i: u32 = 0;
         for agent in agents.iter() {
             if contact_mouse(mouse_pos, agent.pos, agent.size) {
-                *agent_idx = i;
+                *agent_idx = agent.unique;
                 break; 
             }
-            i += 1;
+            //i += 1;
         }
     }
 }
