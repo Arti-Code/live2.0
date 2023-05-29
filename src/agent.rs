@@ -1,8 +1,13 @@
 #![allow(unused)]
+use std::collections::HashMap;
+use std::collections::hash_map::Iter;
+use std::collections::hash_map::IterMut;
 use std::f32::consts::PI;
 
 use macroquad::{prelude::*, color}; 
 use parry2d::shape::*;
+use ::rand::{Rng, thread_rng};
+use crate::kinetic::Detection;
 use crate::kinetic::contact_circles;
 use crate::util::*;
 use crate::consts::*;
@@ -25,7 +30,7 @@ pub struct Agent {
     analize_timer: Timer,
     analizer: DummyNetwork,
     pub alife: bool,
-    enemy: (f32, f32),
+    enemy: Detection,
 }
 
 impl Agent {
@@ -47,7 +52,7 @@ impl Agent {
             analize_timer: Timer::new(0.3, true, true, true),
             analizer: DummyNetwork::new(2),
             alife: true,
-            enemy: (f32::NAN, f32::NAN),
+            enemy: Detection::new_empty(),
         }
     }
     pub fn draw(&self, field_of_view: bool) {
@@ -59,17 +64,19 @@ impl Agent {
         let x2 = x0 + dir.x * self.size*2.0;
         let y2 = y0 + dir.y * self.size*2.0;
         let pulse = (self.pulse * 2.0) - 1.0;
-        if !self.enemy.0.is_nan() {
-            let dist = self.enemy.0;
-            let ang = self.enemy.1;
-            let tg_vec = Vec2::from_angle(ang);
-            draw_line(x0, y0, x0 + tg_vec.x*dist, y0 + tg_vec.y*dist, 0.5, RED);
+        if field_of_view && !self.enemy.is_empty() {
+            let x0 = self.pos.x; let y0 = self.pos.y;
+            let x1 = self.enemy.pos.x; let y1 = self.enemy.pos.y; 
+            //let dist = self.enemy.distance;
+            //let ang = self.enemy.angle;
+            //let tg_vec = Vec2::from_angle(self.rot+ang).normalize();
+            draw_line(x0, y0, x1, y1, 0.5, RED);
         }
         draw_circle_lines(x0, y0, self.size, 0.75, self.color);
         draw_circle_lines(x0, y0, (self.size/2.0)*pulse.abs(), 0.5, self.color);
         draw_line(x1, y1, x2, y2, 0.75, self.color);
         if field_of_view {
-            draw_circle_lines(x0, y0, self.vision_range, 0.5, GRAY);
+            draw_circle_lines(x0, y0, self.vision_range, 0.2, GRAY);
         }
     }
     pub fn update(&mut self, dt: f32){
@@ -101,26 +108,47 @@ impl Agent {
         self.pos -= *collision_normal * penetration.abs() * self.vel * dt * 0.3;
     }
 
-    pub fn detect(&mut self, targets: &Vec<Agent>) {
-        self.enemy = (f32::NAN, f32::NAN);
-        let r = self.vision_range;
-        let pos = self.pos;
-        for target in targets.iter() {
-            if self.unique == target.unique {
-                continue;
-            }
-            let detection = contact_circles(pos, self.rot, r, target.pos, target.rot, target.size);
-            match detection {
-                Some(detected) => {
-                    let dist = pos.distance(target.pos);
-                    if self.enemy.0.is_nan() || self.enemy.0 > dist {
-                        let dir = Vec2::from_angle(self.rot);
-                        let ang = dir.angle_between(target.pos-pos);
-                        self.enemy = (dist, ang);
-                    }
-                },
-                None => {},
-            }
+    pub fn reset_detections(&mut self) {
+        self.enemy = Detection::new_empty();
+    }
+
+    pub fn update_detection(&mut self, target: &Detection) {
+        self.enemy.add_closer(target.distance, target.angle, target.pos);
+    }
+}
+
+
+
+pub struct AgentsBox {
+    pub agents: HashMap<u32, Agent>
+}
+
+impl AgentsBox {
+    pub fn new() -> Self {
+        Self {
+            agents: HashMap::new(),
         }
+    }
+
+    pub fn add_agent(&mut self, agent: Agent) -> u32 {
+        let key: u32 = thread_rng().gen::<u32>();
+        self.agents.insert(key, agent);
+        return key;
+    }
+
+    pub fn get(&self, id: u32) -> Option<&Agent> {
+        return self.agents.get(&id);
+    }
+
+    pub fn remove(&mut self, id: u32) {
+        self.agents.remove(&id);
+    }
+
+    pub fn get_iter(&self) -> Iter<u32, Agent> {
+        return self.agents.iter();
+    }
+    
+    pub fn get_iter_mut(&mut self) -> IterMut<u32, Agent> {
+        return self.agents.iter_mut();
     }
 }

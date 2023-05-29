@@ -6,9 +6,9 @@ Live2:
         ☐ mouse input @started(23-05-21 13:38)
         ✔ collisions between circles (parry2d)
         ☐ collisions between circles and polygons (parry2d)
-        ☐ agent's energy @started(23-05-21 13:38)
+        ✔ agent's energy @started(23-05-21 13:38) @done(23-05-29 22:26) @lasted(1w1d8h48m15s)
         ☐ survability
-        ☐ sense of vision
+        ✔ sense of vision @done(23-05-29 22:26)
         ☐ attack
         ☐ neural network
         ☐ genethic algorithm
