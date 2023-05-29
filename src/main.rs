@@ -2,7 +2,6 @@
 #![allow(unused)]
 
 mod sim;
-mod world;
 mod consts;
 mod util;
 mod agent;
@@ -12,6 +11,7 @@ mod ui;
 mod neuro;
 mod progress_bar;
 mod prelude;
+mod world;
 
 use std::f32::consts::PI;
 use std::thread::sleep;
@@ -28,6 +28,7 @@ use crate::world::*;
 use crate::consts::*;
 use crate::util::*;
 use crate::agent::*;
+use crate::world::*;
 use macroquad::time::*;
 use std::collections::VecDeque;
 use parry2d::query::*;
@@ -70,7 +71,7 @@ async fn main() {
     let mut selected: u8=0;
     let mut mouse_state = MouseState { pos: Vec2::ZERO};
     for _ in 0..AGENTS_NUM {
-        let agent = Agent::new();
+        let agent: Agent = Agent::new();
         agents.push(agent);
     }
 
@@ -139,14 +140,12 @@ fn check_selected(agent: &Agent, agents: &Vec<Agent>, selected: u8) -> bool {
 }
 
 fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer, sel_time: &mut f32) {
-    if timer.update(dt) {
-        println!("TIMER!");
-    }
     let mut to_kill: Vec<u32> = vec![];
-    *sel_time += dt*4.0;
-    *sel_time = *sel_time%(2.0*PI as f32);
+    calc_selection_time(sel_time, dt);
     let mut hit_map = CollisionsMap::new();
+    let mut detections_map = DetectionsMap::new();
     hit_map = map_collisions(agents);
+    detections_map = map_detections(agents);
     for a in agents.iter_mut() {
         let uid = a.unique;
         a.update(dt);
@@ -158,12 +157,22 @@ fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer, sel_time: &mut f3
 
             }
         }
+        a.reset_detections();
+        match detections_map.get_detection(uid) {
+            Some(detection) => {
+                a.update_detection(detection);
+            },
+            None => {
+                a.update_detection(&Detection::new_empty());
+            }
+        }
     }
     agents.retain(|a| a.alife == true);
-/*     for agent in agents.iter() {
-        agent.detect(agents);
-    } */
+}
 
+fn calc_selection_time(selection_time: &mut f32, dt: f32) {
+    *selection_time += dt*4.0;
+    *selection_time = *selection_time%(2.0*PI as f32);
 }
 
 fn detect(agents: &mut Vec<Agent>){
@@ -172,6 +181,29 @@ fn detect(agents: &mut Vec<Agent>){
             
         }
     }
+}
+
+fn map_detections(agents: &Vec<Agent>) -> DetectionsMap {
+    let mut detections = DetectionsMap::new();
+    for agent1 in agents {
+        for agent2 in agents {
+            if agent1.unique != agent2.unique {
+                let contact = contact_circles(agent1.pos, agent1.rot, agent1.vision_range, agent2.pos, agent2.rot, agent2.vision_range);
+                match contact {
+                    Some(contact) => {
+                        let rel_pos2 = agent2.pos - agent1.pos;
+                        let dir1 = Vec2::from_angle(agent1.rot);
+                        let ang = dir1.angle_between(rel_pos2);
+                        let dist = agent1.pos.distance(agent2.pos);
+                        let detection = Detection::new(dist, ang, agent2.pos);
+                        detections.add_detection(agent1.unique, detection);
+                    },
+                    None => {},
+                }
+            }
+        }
+    }
+    return detections;
 }
 
 fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
@@ -187,7 +219,6 @@ fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
                             let norm = contact.normal1.data.0[0];
                             let n = Vec2::new(norm[0], norm[1]);
                             let penetration = contact.dist;
-                            //hits.push((a1, norm, contact.dist));
                             let hit: Hit=Hit{ normal: n, overlap: contact.dist };
                             hits.add_collision(a1.unique, hit);
                         }

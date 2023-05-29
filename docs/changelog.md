@@ -10,6 +10,8 @@
 * * *
 
 ##### v0.2
+
+- [x] visual detection in range
 - [ ] camera movement
 - [ ] camera zoom in/zoom out
 - [x] circles collision

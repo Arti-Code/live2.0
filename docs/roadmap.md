@@ -10,7 +10,7 @@
 * * *
 
 - [ ] biomes
-- [ ] sensing
+- [x] sensing (vision)
 - [ ] fitness function
 - [ ] mutation
 - [ ] recombination
