@@ -47,17 +47,7 @@ fn app_configuration() -> Conf {
     }
 }
 
-pub struct Signals {
-    pub spawn_agent: bool,
-}
 
-impl Signals {
-    pub fn new() -> Self {
-        Self {
-            spawn_agent: false,
-        }
-    }
-}
 
 #[macroquad::main(app_configuration)]
 async fn main() {

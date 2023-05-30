@@ -11,31 +11,8 @@ use image::open;
 use crate::agent::Agent;
 use crate::consts::{SCREEN_WIDTH, SCREEN_HEIGHT};
 use crate::{progress_bar::*, Signals};
+use crate::sim::*;
 
-
-pub struct UIState {
-    pub performance: bool,
-    pub inspect: bool,
-    pub mouse: bool,
-    pub create: bool,
-    pub quit: bool,
-}
-
-impl UIState {
-    pub fn new() -> Self {
-        Self {
-            performance: false,
-            inspect: false,
-            mouse: false,
-            create: false,
-            quit: false,
-        }
-    }
-}
-
-pub struct MouseState {
-    pub pos: Vec2,
-}
 
 static V: Vec2 = Vec2::ZERO;
 
