@@ -1,4 +1,7 @@
-/* use macroquad::
+#![allow(unused)]
+
+
+use macroquad::prelude::*;
 
 
 pub struct Simulation {
@@ -8,4 +11,4 @@ pub struct Simulation {
     pub sel_time: f32,
     pub selected: u8,
     pub mouse_state: MouseState,
-} */
+}
