@@ -157,8 +157,8 @@ impl DetectionsMap {
     pub fn new() -> Self {
         Self { detections: HashMap::new() }
     }
-    pub fn add_detection(&mut self, unique: u32, detection: Detection) {
-        let old_detection = self.detections.get(&unique);
+    pub fn add_detection(&mut self, id: u32, detection: Detection) {
+        let old_detection = self.detections.get(&id);
         let actual = match old_detection {
             Some(actual_detection) if actual_detection.distance > detection.distance => {
                 detection
@@ -173,16 +173,16 @@ impl DetectionsMap {
                 detection
             }
         };
-        self.detections.insert(unique, actual);
+        self.detections.insert(id, actual);
     }
     pub fn clear(&mut self) {
         self.detections.clear();
     }
-    pub fn remove_detection(&mut self, unique: u32) {
-        _ = self.detections.remove(&unique);
+    pub fn remove_detection(&mut self, id: u32) {
+        _ = self.detections.remove(&id);
     }
-    pub fn get_detection(&mut self, unique: u32) -> Option<&Detection> {
-        return self.detections.get(&unique);
+    pub fn get_detection(&mut self, id: u32) -> Option<&Detection> {
+        return self.detections.get(&id);
     } 
 }
 
@@ -204,16 +204,16 @@ impl CollisionsMap {
     pub fn new() -> Self {
         Self { contacts: HashMap::new() }
     }
-    pub fn add_collision(&mut self, unique: u32, hit: Hit) {
-        self.contacts.insert(unique, hit);
+    pub fn add_collision(&mut self, id: u32, hit: Hit) {
+        self.contacts.insert(id, hit);
     }
     pub fn clear(&mut self) {
         self.contacts.clear();
     }
-    pub fn remove_collision(&mut self, unique: u32) {
-        _ = self.contacts.remove(&unique);
+    pub fn remove_collision(&mut self, id: u32) {
+        _ = self.contacts.remove(&id);
     }
-    pub fn get_collision(&mut self, unique: u32) -> Option<&Hit> {
-        return self.contacts.get(&unique);
+    pub fn get_collision(&mut self, id: u32) -> Option<&Hit> {
+        return self.contacts.get(&id);
     } 
 }

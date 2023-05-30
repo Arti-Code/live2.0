@@ -39,11 +39,11 @@ pub struct MouseState {
 
 static V: Vec2 = Vec2::ZERO;
 
-pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, time: f32, agent: Option<&Agent>, mouse_state: &MouseState, signals: &mut Signals) {
+pub fn ui_process(ui_state: &mut UIState, fps: i32, delta: f32, agent: Option<&Agent>, mouse_state: &MouseState, signals: &mut Signals) {
     egui_macroquad::ui(|egui_ctx| {
         build_top_menu(egui_ctx, ui_state);
         build_quit_window(egui_ctx, ui_state);
-        build_monit_window(egui_ctx, ui_state, fps, delta, time);
+        build_monit_window(egui_ctx, ui_state, fps, delta);
         build_mouse_window(egui_ctx, ui_state, mouse_state);
         match agent {
             Some(agent) => {
@@ -98,14 +98,13 @@ fn build_top_menu(egui_ctx: &Context, ui_state: &mut UIState) {
 }
 
 
-fn build_monit_window(egui_ctx: &Context, ui_state: &mut UIState, fps: i32, delta: f32, time: f32) {
+fn build_monit_window(egui_ctx: &Context, ui_state: &mut UIState, fps: i32, delta: f32) {
         if ui_state.performance {
             egui::Window::new("Monitor").default_pos((5.0, 100.0))
             .default_width(125.0)
             .show(egui_ctx, |ui| {
                 ui.label(format!("DELTA: {}ms", (delta*1000.0).round()));
                 ui.label(format!("FPS: {}", fps));
-                ui.label(format!("TIMER: {}", time));
             });
         }    
 }
