@@ -15,7 +15,7 @@ use crate::timer::*;
 use crate::neuro::*;
 
 pub struct Agent {
-    pub unique: u32,
+    //pub unique: u32,
     pub pos: Vec2,
     pub rot: f32,
     pub vel: f32,
@@ -37,7 +37,7 @@ impl Agent {
     pub fn new() -> Self {
         let s = rand::gen_range(4, 10) as f32;
         Self {
-            unique: rand::rand(),
+            //unique: rand::rand(),
             pos: random_position(SCREEN_WIDTH, SCREEN_HEIGHT),
             rot: random_rotation(),
             vel: rand::gen_range(0.0, 1.0)*AGENT_SPEED,
@@ -113,7 +113,7 @@ impl Agent {
     }
 
     pub fn update_detection(&mut self, target: &Detection) {
-        self.enemy.add_closer(target.distance, target.angle, target.pos);
+        self.enemy.add_closer(target.distance, target.angle, target.pos.clone());
     }
 }
 
@@ -150,5 +150,9 @@ impl AgentsBox {
     
     pub fn get_iter_mut(&mut self) -> IterMut<u32, Agent> {
         return self.agents.iter_mut();
+    }
+
+    pub fn count(&self) -> usize {
+        return self.agents.len();
     }
 }

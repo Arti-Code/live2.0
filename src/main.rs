@@ -63,16 +63,15 @@ impl Signals {
 async fn main() {
     init();
     let mut cam_pos: Vec2=Vec2::ZERO;
-    let mut agents: Vec<Agent> = vec![];
+    let mut agents: AgentsBox=AgentsBox::new();
     let mut ui_state = UIState::new();
     let mut signals = Signals::new();
-    let mut main_timer = Timer::new(60.0, true, true, true);
     let mut sel_time: f32 = 0.0;
     let mut selected: u32=0;
     let mut mouse_state = MouseState { pos: Vec2::ZERO};
     for _ in 0..AGENTS_NUM {
         let agent: Agent = Agent::new();
-        agents.push(agent);
+        agents.add_agent(agent);
     }
 
     loop {
@@ -80,21 +79,21 @@ async fn main() {
         let fps = get_fps();
         let (mouse_x, mouse_y) = mouse_position();
         mouse_state.pos = Vec2::new(mouse_x, mouse_y);
-        let mut agents_num = agents.len() as u8;
+        let mut agents_num = agents.count();
         if signals.spawn_agent {
             signals.spawn_agent = false;
             let agent = Agent::new();
-            agents.push(agent);
+            agents.add_agent(agent);
         }
         input(&mut cam_pos, &mut selected, &agents);
-        update(&mut agents, delta, &mut main_timer, &mut sel_time);
-        if agents.len() < AGENTS_NUM_MIN {
+        update(&mut agents, delta, &mut sel_time);
+        if agents.count() < AGENTS_NUM_MIN {
             let agent = Agent::new();
-            agents.push(agent);
+            agents.add_agent(agent);
             selected = 0;
         }
-        let selected_agent = agents.get(selected as usize);
-        ui_process(&mut ui_state, fps, delta, main_timer.time, selected_agent, &mouse_state, &mut signals);
+        let selected_agent = agents.get(selected);
+        ui_process(&mut ui_state, fps, delta, selected_agent, &mouse_state, &mut signals);
         draw(&agents, &cam_pos, selected, sel_time);
         ui_draw();
         next_frame().await;
@@ -106,16 +105,16 @@ fn init() {
     window::request_new_screen_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-fn draw(agents: &Vec<Agent>, cam_pos: &Vec2, selected: u32, sel_time: f32) {
+fn draw(agents: &AgentsBox, cam_pos: &Vec2, selected: u32, sel_time: f32) {
     clear_background(BLACK);
-    for a in agents.iter() {
+    for (id, a) in agents.get_iter() {
         let mut draw_field_of_view: bool=false;
-        if a.unique == selected {
+        if *id == selected {
             draw_field_of_view = true;
         };
         a.draw(draw_field_of_view);
     }
-    match agents.get(selected as usize) {
+    match agents.get(selected) {
         Some(selected_agent) => {
             let pos = Vec2::new(selected_agent.pos.x, selected_agent.pos.y);
             let s = selected_agent.size;
@@ -125,14 +124,14 @@ fn draw(agents: &Vec<Agent>, cam_pos: &Vec2, selected: u32, sel_time: f32) {
     };
 }
 
-fn check_selected(agent: &Agent, agents: &Vec<Agent>, selected: u32) -> bool {
-    match agents.get(selected as usize) {
-        Some(selected_agent) if agent.unique == selected_agent.unique => {
+fn check_selected(agent: &Agent, agents: &AgentsBox, selected: u32) -> bool {
+    match agents.get(selected) {
+        Some(selected_agent) => {
             return true;
         },
-        Some(selected_agent) if agent.unique != selected_agent.unique => {
-            return false;
-        },
+//        Some(selected_agent) if agent.unique != selected_agent.unique => {
+//            return false;
+//        },
         Some(_) => {
             return false;
         },
@@ -142,15 +141,15 @@ fn check_selected(agent: &Agent, agents: &Vec<Agent>, selected: u32) -> bool {
     }
 }
 
-fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer, sel_time: &mut f32) {
+fn update(agents: &mut AgentsBox, dt: f32, sel_time: &mut f32) {
     let mut to_kill: Vec<u32> = vec![];
     calc_selection_time(sel_time, dt);
     let mut hit_map = CollisionsMap::new();
     let mut detections_map = DetectionsMap::new();
     hit_map = map_collisions(agents);
     detections_map = map_detections(agents);
-    for a in agents.iter_mut() {
-        let uid = a.unique;
+    for (id, a) in agents.get_iter_mut() {
+        let uid = *id;
         a.update(dt);
         match hit_map.get_collision(uid) {
             Some(hit) => {
@@ -170,7 +169,7 @@ fn update(agents: &mut Vec<Agent>, dt: f32, timer: &mut Timer, sel_time: &mut f3
             }
         }
     }
-    agents.retain(|a| a.alife == true);
+    agents.agents.retain(|_, agent| agent.alife == true);
 }
 
 fn calc_selection_time(selection_time: &mut f32, dt: f32) {
@@ -178,19 +177,12 @@ fn calc_selection_time(selection_time: &mut f32, dt: f32) {
     *selection_time = *selection_time%(2.0*PI as f32);
 }
 
-fn detect(agents: &mut Vec<Agent>){
-    for agent1 in agents.iter() {
-        for agent2 in agents.iter() {
-            
-        }
-    }
-}
-
-fn map_detections(agents: &Vec<Agent>) -> DetectionsMap {
+fn map_detections(agents: &AgentsBox) -> DetectionsMap {
     let mut detections = DetectionsMap::new();
-    for agent1 in agents {
-        for agent2 in agents {
-            if agent1.unique != agent2.unique {
+    for (id1, agent1) in agents.get_iter() {
+        for (id2, agent2) in agents.get_iter() {
+            let idx1 = *id1; let idx2 = *id2;
+            if idx1 != idx2 {
                 let contact = contact_circles(agent1.pos, agent1.rot, agent1.vision_range, agent2.pos, agent2.rot, agent2.vision_range);
                 match contact {
                     Some(contact) => {
@@ -199,7 +191,7 @@ fn map_detections(agents: &Vec<Agent>) -> DetectionsMap {
                         let ang = dir1.angle_between(rel_pos2);
                         let dist = agent1.pos.distance(agent2.pos);
                         let detection = Detection::new(dist, ang, agent2.pos);
-                        detections.add_detection(agent1.unique, detection);
+                        detections.add_detection(idx1, detection);
                     },
                     None => {},
                 }
@@ -209,11 +201,12 @@ fn map_detections(agents: &Vec<Agent>) -> DetectionsMap {
     return detections;
 }
 
-fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
+fn map_collisions(agents: &AgentsBox) -> CollisionsMap {
     let mut hits: CollisionsMap = CollisionsMap::new();
-    for a1 in agents.iter() {
-        for a2 in agents.iter() {
-            if a1.unique != a2.unique {
+    for (id1, a1) in agents.get_iter() {
+        for (id2, a2) in agents.get_iter() {
+            let idx1 = *id1; let idx2 = *id2;
+            if idx1 != idx2 {
                 let contact = contact_circles(a1.pos, a1.rot, a1.size, a2.pos,a2.rot, a2.size);
                 match contact {
                     Some(contact) => {
@@ -223,7 +216,7 @@ fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
                             let n = Vec2::new(norm[0], norm[1]);
                             let penetration = contact.dist;
                             let hit: Hit=Hit{ normal: n, overlap: contact.dist };
-                            hits.add_collision(a1.unique, hit);
+                            hits.add_collision(idx1, hit);
                         }
                     },
                     None => {}
@@ -234,7 +227,7 @@ fn map_collisions(agents: &Vec<Agent>) -> CollisionsMap {
     return hits;
 }
 
-fn input(cam_pos: &mut Vec2, agent_idx: &mut u32, agents: &Vec<Agent>) {
+fn input(cam_pos: &mut Vec2, agent_idx: &mut u32, agents: &AgentsBox) {
     if is_key_released(KeyCode::Up) {
         cam_pos.y += 10.0;
         println!("UP");
@@ -265,9 +258,9 @@ fn input(cam_pos: &mut Vec2, agent_idx: &mut u32, agents: &Vec<Agent>) {
         let (mouse_posx, mouse_posy) = mouse_position();
         let mouse_pos = Vec2::new(mouse_posx, mouse_posy);
         let mut i: u32 = 0;
-        for agent in agents.iter() {
+        for (id, agent) in agents.get_iter() {
             if contact_mouse(mouse_pos, agent.pos, agent.size) {
-                *agent_idx = agent.unique;
+                *agent_idx = *id;
                 break; 
             }
             //i += 1;

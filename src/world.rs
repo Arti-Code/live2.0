@@ -54,7 +54,8 @@ impl World {
         let mut hits: CollisionsMap = CollisionsMap::new();
         for (id1, a1) in self.agents.get_iter() {
             for (id2, a2) in self.agents.get_iter() {
-                if id1 != id2 {
+                let idx1 = *id1; let idx2 = *id2;
+                if idx1 != idx2 {
                     let contact = contact_circles(a1.pos, a1.rot, a1.size, a2.pos,a2.rot, a2.size);
                     match contact {
                         Some(contact) => {
@@ -64,7 +65,7 @@ impl World {
                                 let n = Vec2::new(norm[0], norm[1]);
                                 let penetration = contact.dist;
                                 let hit: Hit=Hit{ normal: n, overlap: contact.dist };
-                                hits.add_collision(a1.unique, hit);
+                                hits.add_collision(idx1, hit);
                             }
                         },
                         None => {}
