@@ -173,7 +173,7 @@ fn map_detections(agents: &AgentsBox) -> DetectionsMap {
         for (id2, agent2) in agents.get_iter() {
             let idx1 = *id1; let idx2 = *id2;
             if idx1 != idx2 {
-                let contact = contact_circles(agent1.pos, agent1.rot, agent1.vision_range, agent2.pos, agent2.rot, agent2.vision_range);
+                let contact = contact_circles(agent1.pos, agent1.rot, agent1.vision_range, agent2.pos, agent2.rot, agent2.size);
                 match contact {
                     Some(contact) => {
                         let rel_pos2 = agent2.pos - agent1.pos;
