@@ -11,7 +11,7 @@
 
 ##### v0.3
 
-- [ ] code refactor (sim, world structs, some other small changes)
+- [x] code refactor (sim structs, some other small changes)
 
 ##### v0.2
 

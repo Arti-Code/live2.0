@@ -16,7 +16,7 @@ pub struct Simulation {
     config: SimConfig,
     pub collisions_map: CollisionsMap,
     pub detections_map: DetectionsMap,
-    pub ui_state: UIState,
+    pub ui: UISystem,
     pub sim_state: SimState,
     pub signals: Signals,
     select_phase: f32,
@@ -35,11 +35,11 @@ impl Simulation {
             config: configuration,
             collisions_map: CollisionsMap::new(),
             detections_map: DetectionsMap::new(),
-            ui_state: UIState::new(),
+            ui: UISystem::new(),
             sim_state: SimState::new(),
             signals: Signals::new(),
             selected: 0,
-           // selected_agent: None,
+            //selected_agent: None,
             select_phase: 0.0,
             mouse_state: MouseState { pos: Vec2::NAN},
             agents: AgentsBox::new(),
@@ -100,6 +100,17 @@ impl Simulation {
                 draw_circle_lines(pos.x, pos.y, 2.0*s+(self.select_phase.sin()*s*0.5), 1.0, ORANGE);
             },
             None => {},
+        };
+    }
+
+    fn get_selected(&self) -> Option<&Agent> {
+        match self.agents.get(self.selected) {
+            Some(selected_agent) => {
+                return Some(selected_agent);
+            },
+            None => {
+                return None;
+            },
         };
     }
 
@@ -187,6 +198,14 @@ impl Simulation {
         return hits;
     }
 
+    pub fn process_ui(&mut self) {
+        //let marked_agent = self.get_selected();
+        self.ui.ui_process(self.fps, self.dt, None, &self.mouse_state, &mut self.signals);
+    }
+
+    pub fn draw_ui(&self) {
+        self.ui.ui_draw();
+    }
 }
 
 //?         [[[SIM_CONFIG]]]
@@ -232,29 +251,6 @@ impl Signals {
     pub fn new() -> Self {
         Self {
             spawn_agent: false,
-        }
-    }
-}
-
-//?         [[[UISTATE]]]
-pub struct UIState {
-    pub performance: bool,
-    pub inspect: bool,
-    pub mouse: bool,
-    pub create: bool,
-    pub quit: bool,
-    pub agents_num: i32,
-}
-
-impl UIState {
-    pub fn new() -> Self {
-        Self {
-            performance: false,
-            inspect: false,
-            mouse: false,
-            create: false,
-            quit: false,
-            agents_num: 0,
         }
     }
 }

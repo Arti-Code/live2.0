@@ -1,13 +1,13 @@
 Live2:
     0.3:
         ✔ init rewrite code
-        ☐ simulation struct: rewrite [ init() ]
-        ☐ simulation struct: rewrite [ update() ]
-        ☐ simulation struct: rewrite [ draw() ]
-        ☐ simulation struct: rewrite [ input() ]
+        ✔ simulation struct: rewrite [ init() ] @done(23-06-01 16:53)
+        ✔ simulation struct: rewrite [ update() ] @done(23-06-01 18:56)
+        ✔ simulation struct: rewrite [ draw() ] @done(23-06-01 16:53)
+        ✔ simulation struct: rewrite [ input() ] @done(23-06-01 18:56)
         ☐ world struct: rewrite [ collisions_mapper ]
         ☐ world struct: rewrite [ detection_mapper ]
-        ☐ fix detection range
+        ✔ fix detection range @done(23-06-01 16:53)
     0.2:
         ✘ camera viewport
         ✘ camera translation, zoom in/zoom out
