@@ -64,24 +64,3 @@ async fn main() {
         next_frame().await;
     }
 }
-
-/* fn check_selected(agent: &Agent, agents: &AgentsBox, selected: u32) -> bool {
-    match agents.get(selected) {
-        Some(selected_agent) => {
-            return true;
-        },
-        Some(_) => {
-            return false;
-        },
-        None => {
-            return false;
-        },
-    }
-} */
-
-/* async fn wait(delta: f32) {
-    let t = FIX_DT - delta;
-    if t > 0.0 {
-        sleep(Duration::from_secs_f32(t));
-    }
-} */

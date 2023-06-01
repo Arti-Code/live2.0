@@ -90,7 +90,6 @@ impl UISystem {
         });
     }
 
-
     fn build_monit_window(&self, egui_ctx: &Context, fps: i32, delta: f32) {
         if self.state.performance {
             egui::Window::new("Monitor").default_pos((5.0, 100.0))
