@@ -15,7 +15,6 @@ use crate::timer::*;
 use crate::neuro::*;
 
 pub struct Agent {
-    //pub unique: u32,
     pub pos: Vec2,
     pub rot: f32,
     pub vel: f32,
@@ -37,7 +36,6 @@ impl Agent {
     pub fn new() -> Self {
         let s = rand::gen_range(4, 10) as f32;
         Self {
-            //unique: rand::rand(),
             pos: random_position(SCREEN_WIDTH, SCREEN_HEIGHT),
             rot: random_rotation(),
             vel: rand::gen_range(0.0, 1.0)*AGENT_SPEED,
@@ -66,17 +64,14 @@ impl Agent {
         let pulse = (self.pulse * 2.0) - 1.0;
         if field_of_view && !self.enemy.is_empty() {
             let x0 = self.pos.x; let y0 = self.pos.y;
-            let x1 = self.enemy.pos.x; let y1 = self.enemy.pos.y; 
-            //let dist = self.enemy.distance;
-            //let ang = self.enemy.angle;
-            //let tg_vec = Vec2::from_angle(self.rot+ang).normalize();
+            let x1 = self.enemy.pos.x; let y1 = self.enemy.pos.y;
             draw_line(x0, y0, x1, y1, 0.5, RED);
         }
-        draw_circle_lines(x0, y0, self.size, 0.75, self.color);
-        draw_circle_lines(x0, y0, (self.size/2.0)*pulse.abs(), 0.5, self.color);
-        draw_line(x1, y1, x2, y2, 0.75, self.color);
+        draw_circle_lines(x0, y0, self.size, 2.0, self.color);
+        draw_circle(x0, y0, (self.size/2.0)*pulse.abs(), self.color);
+        draw_line(x1, y1, x2, y2, 1.0, self.color);
         if field_of_view {
-            draw_circle_lines(x0, y0, self.vision_range, 0.2, GRAY);
+            draw_circle_lines(x0, y0, self.vision_range, 0.75, GRAY);
         }
     }
     pub fn update(&mut self, dt: f32){
@@ -127,6 +122,13 @@ impl AgentsBox {
     pub fn new() -> Self {
         Self {
             agents: HashMap::new(),
+        }
+    }
+
+    pub fn add_many_agents(&mut self, agents_num: usize) {
+        for _ in 0..agents_num {
+            let agent = Agent::new();
+            _ = self.add_agent(agent);
         }
     }
 

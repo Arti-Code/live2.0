@@ -1,19 +1,28 @@
 Live2:
+    0.3:
+        ✔ init rewrite code
+        ✔ simulation struct: rewrite [ init() ] @done(23-06-01 16:53)
+        ✔ simulation struct: rewrite [ update() ] @done(23-06-01 18:56)
+        ✔ simulation struct: rewrite [ draw() ] @done(23-06-01 16:53)
+        ✔ simulation struct: rewrite [ input() ] @done(23-06-01 18:56)
+        ☐ world struct: rewrite [ collisions_mapper ]
+        ☐ world struct: rewrite [ detection_mapper ]
+        ✔ fix detection range @done(23-06-01 16:53)
     0.2:
-        ☐ camera viewport @started(23-05-20 17:48)
-        ☐ camera translation, zoom in/zoom out @started(23-05-20 17:48)
-        ☐ keyboard input @started(23-05-20 17:48)
-        ☐ mouse input @started(23-05-21 13:38)
+        ✘ camera viewport
+        ✘ camera translation, zoom in/zoom out
+        ✔ keyboard input 
+        ✔ mouse input 
         ✔ collisions between circles (parry2d)
-        ☐ collisions between circles and polygons (parry2d)
-        ✔ agent's energy @started(23-05-21 13:38) @done(23-05-29 22:26) @lasted(1w1d8h48m15s)
-        ☐ survability
-        ✔ sense of vision @done(23-05-29 22:26)
-        ☐ attack
-        ☐ neural network
-        ☐ genethic algorithm
-        ☐ loading/saving simulation
-        ☐ obstacles
-        ☐ resources
+        ✘ collisions between circles and polygons (parry2d)
+        ✔ agent's energy 
+        ✔ survability
+        ✔ sense of vision 
+        ✘ attack
+        ✘ neural network
+        ✘ genethic algorithm
+        ✘ loading/saving simulation
+        ✘ obstacles
+        ✘ resources
         ✔ ui
         

@@ -9,6 +9,10 @@
 
 * * *
 
+##### v0.3
+
+- [x] code refactor (sim structs, some other small changes)
+
 ##### v0.2
 
 - [x] visual detection in range
