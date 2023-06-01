@@ -52,14 +52,12 @@ fn app_configuration() -> Conf {
 async fn main() {
     let cfg = SimConfig::default();
     let mut sim = Simulation::new(&"Simulation One", cfg);
-    sim.init();
-    let mut sel_time: f32 = 0.0;
-    let mut selected: u32=0;    
+    sim.init();    
     
     loop {
         sim.input();
-        let selected_agent = sim.agents.get(selected);
-        sim.process_ui();
+        let selected_agent = sim.agents.get(sim.selected);
+        sim.ui.ui_process(sim.fps, sim.dt, selected_agent, &mut sim.signals);
         sim.update();
         sim.draw();
         sim.draw_ui();
@@ -67,7 +65,7 @@ async fn main() {
     }
 }
 
-fn check_selected(agent: &Agent, agents: &AgentsBox, selected: u32) -> bool {
+/* fn check_selected(agent: &Agent, agents: &AgentsBox, selected: u32) -> bool {
     match agents.get(selected) {
         Some(selected_agent) => {
             return true;
@@ -79,11 +77,11 @@ fn check_selected(agent: &Agent, agents: &AgentsBox, selected: u32) -> bool {
             return false;
         },
     }
-}
+} */
 
-async fn wait(delta: f32) {
+/* async fn wait(delta: f32) {
     let t = FIX_DT - delta;
     if t > 0.0 {
         sleep(Duration::from_secs_f32(t));
     }
-}
+} */

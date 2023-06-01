@@ -4,6 +4,7 @@
 use std::f32::consts::PI;
 
 use macroquad::prelude::*;
+use egui_macroquad;
 use crate::agent::*;
 use crate::consts::*;
 use crate::kinetic::*;
@@ -54,6 +55,7 @@ impl Simulation {
     }
 
     pub fn update(&mut self) {
+        self.signals_check();
         self.update_sim_state();
         self.check_agents_num();
         self.calc_selection_time();
@@ -103,6 +105,14 @@ impl Simulation {
         };
     }
 
+    fn signals_check(&mut self) {
+        if self.signals.spawn_agent {
+            let agent = Agent::new();
+            self.agents.add_agent(agent);
+            self.signals.spawn_agent = false;
+        }
+    }
+
     fn get_selected(&self) -> Option<&Agent> {
         match self.agents.get(self.selected) {
             Some(selected_agent) => {
@@ -116,13 +126,15 @@ impl Simulation {
 
     pub fn input(&mut self) {
         if is_mouse_button_released(MouseButton::Left) {
-            self.selected = 0;
-            let (mouse_posx, mouse_posy) = mouse_position();
-            let mouse_pos = Vec2::new(mouse_posx, mouse_posy);
-            for (id, agent) in self.agents.get_iter() {
-                if contact_mouse(mouse_pos, agent.pos, agent.size) {
-                    self.selected = *id;
-                    break; 
+            if !self.ui.pointer_over {
+                self.selected = 0;
+                let (mouse_posx, mouse_posy) = mouse_position();
+                let mouse_pos = Vec2::new(mouse_posx, mouse_posy);
+                for (id, agent) in self.agents.get_iter() {
+                    if contact_mouse(mouse_pos, agent.pos, agent.size) {
+                        self.selected = *id;
+                        break; 
+                    }
                 }
             }
         }
@@ -196,11 +208,6 @@ impl Simulation {
             }
         }
         return hits;
-    }
-
-    pub fn process_ui(&mut self) {
-        //let marked_agent = self.get_selected();
-        self.ui.ui_process(self.fps, self.dt, None, &self.mouse_state, &mut self.signals);
     }
 
     pub fn draw_ui(&self) {

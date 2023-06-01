@@ -18,21 +18,24 @@ static V: Vec2 = Vec2::ZERO;
 
 pub struct UISystem {
     pub state: UIState,
+    pub pointer_over: bool,
 }
 
 impl UISystem {
     pub fn new() -> Self {
         Self {
             state: UIState::new(),
+            pointer_over: false,
         }
     }
     
-    pub fn ui_process(&mut self, fps: i32, delta: f32, agent: Option<&Agent>, mouse_state: &MouseState, signals: &mut Signals) {
+    pub fn ui_process(&mut self, fps: i32, delta: f32, agent: Option<&Agent>, signals: &mut Signals) {
         egui_macroquad::ui(|egui_ctx| {
+            self.pointer_over = egui_ctx.is_pointer_over_area();
             self.build_top_menu(egui_ctx);
             self.build_quit_window(egui_ctx);
             self.build_monit_window(egui_ctx, fps, delta);
-            self.build_mouse_window(egui_ctx, mouse_state);
+            self.build_mouse_window(egui_ctx);
             match agent {
                 Some(agent) => {
                     self.build_inspect_window(egui_ctx, agent)
@@ -40,51 +43,52 @@ impl UISystem {
                 None => {}
             }
             self.build_create_window(egui_ctx, signals);
-    });
-}
+        });
+    }
 
     fn build_top_menu(&mut self, egui_ctx: &Context) {
         egui::TopBottomPanel::top("top_panel").show(egui_ctx, |ui| {
+            if !self.pointer_over {
+                self.pointer_over = ui.ui_contains_pointer();
+            }
             egui::menu::bar(ui, |ui| {
-                //ui.image(texture_id, size)
-                    //ui.image(texture_id, size)
-                    ui.heading(RichText::new( "LIVE 2.0").color(Color32::GREEN).strong());
-                    ui.add_space(5.0);
-                    ui.separator();
-                    ui.add_space(5.0);
-                    egui::menu::menu_button(ui, RichText::new("Simulation").strong(), |ui| {
-                        if ui.button(RichText::new("New Simulation").color(Color32::from_gray(150))).clicked() {
-                        }
-                        if ui.button(RichText::new("Load Simulation").color(Color32::from_gray(150))).clicked() {
-                        }
-                        if ui.button(RichText::new("Save Simulation").color(Color32::from_gray(150))).clicked() {
-                        }
-                        if ui.button(RichText::new("Quit").color(Color32::RED).strong()).clicked() {
-                            self.state.quit = true;
-                        }
-                    });
-                    ui.add_space(10.0);
-                    ui.separator();
-                    ui.add_space(10.0);
-                    egui::menu::menu_button(ui, RichText::new("Tools").strong(), |ui| {
-                        if ui.button(RichText::new("Performance").strong().color(Color32::YELLOW)).clicked() {
-                            self.state.performance = !self.state.performance;
-                        }
-                        if ui.button(RichText::new("Inspector").strong().color(Color32::YELLOW)).clicked() {
-                            self.state.inspect = !self.state.inspect;
-                        }
-                        if ui.button(RichText::new("Mouse Input").strong().color(Color32::YELLOW)).clicked() {
-                            self.state.mouse = !self.state.mouse;
-                        }
-                        if ui.button(RichText::new("Creator").strong().color(Color32::YELLOW)).clicked() {
-                            self.state.create = !self.state.create;
-                        }
-                    });
-                    ui.add_space(10.0);
-                    ui.separator();
+                ui.heading(RichText::new( "LIVE 2.0").color(Color32::GREEN).strong());
+                ui.add_space(5.0);
+                ui.separator();
+                ui.add_space(5.0);
+                egui::menu::menu_button(ui, RichText::new("Simulation").strong(), |ui| {
+                    if ui.button(RichText::new("New Simulation").color(Color32::from_gray(150))).clicked() {
+                    }
+                    if ui.button(RichText::new("Load Simulation").color(Color32::from_gray(150))).clicked() {
+                    }
+                    if ui.button(RichText::new("Save Simulation").color(Color32::from_gray(150))).clicked() {
+                    }
+                    if ui.button(RichText::new("Quit").color(Color32::RED).strong()).clicked() {
+                        self.state.quit = true;
+                    }
                 });
+                ui.add_space(10.0);
+                ui.separator();
+                ui.add_space(10.0);
+                egui::menu::menu_button(ui, RichText::new("Tools").strong(), |ui| {
+                    if ui.button(RichText::new("Performance").strong().color(Color32::YELLOW)).clicked() {
+                        self.state.performance = !self.state.performance;
+                    }
+                    if ui.button(RichText::new("Inspector").strong().color(Color32::YELLOW)).clicked() {
+                        self.state.inspect = !self.state.inspect;
+                    }
+                    if ui.button(RichText::new("Mouse Input").strong().color(Color32::YELLOW)).clicked() {
+                        self.state.mouse = !self.state.mouse;
+                    }
+                    if ui.button(RichText::new("Creator").strong().color(Color32::YELLOW)).clicked() {
+                        self.state.create = !self.state.create;
+                    }
+                });
+                ui.add_space(10.0);
+                ui.separator();
             });
-        }
+        });
+    }
 
 
     fn build_monit_window(&self, egui_ctx: &Context, fps: i32, delta: f32) {
@@ -114,12 +118,13 @@ impl UISystem {
         }    
     }
 
-    fn build_mouse_window(&self, egui_ctx: &Context, mouse_state: &MouseState) {
+    fn build_mouse_window(&self, egui_ctx: &Context) {
         if self.state.mouse {
+            let (mouse_x, mouse_y) = mouse_position();
             egui::Window::new("Mouse").default_pos((5.0, 325.0))
             .default_width(125.0)
             .show(egui_ctx, |ui| {
-                ui.label(format!("X: {} | Y: {}", mouse_state.pos.x, mouse_state.pos.y));
+                ui.label(format!("X: {} | Y: {}", mouse_x.round(), mouse_y.round()));
             });
         }    
     }
