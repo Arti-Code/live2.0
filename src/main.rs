@@ -13,29 +13,18 @@ mod progress_bar;
 mod prelude;
 mod world;
 
-use std::f32::consts::PI;
-use std::thread::sleep;
-use std::time::Duration;
+
 use macroquad::miniquad::conf::Icon;
 use macroquad::prelude::*;
-use macroquad::window; 
-use macroquad::file::*;
-use kinetic::*;
-use parry2d::query::details::contact_ball_ball;
-use egui_extras::RetainedImage;
+use macroquad::window;
 use crate::sim::*;
-use crate::prelude::*;
 use crate::world::*;
 use crate::consts::*;
 use crate::util::*;
 use crate::agent::*;
 use crate::world::*;
 use macroquad::time::*;
-use std::collections::VecDeque;
-use parry2d::query::*;
-use parry2d::shape::*;
 use crate::ui::*;
-use crate::timer::*;
 
 fn app_configuration() -> Conf {
     Conf{
