@@ -3,10 +3,11 @@ use std::path::Path;
 
 use egui_macroquad;
 use macroquad::prelude::*;
-use egui::{self, Context};
+use egui::{self, Context, Style};
 use egui::{RichText, Color32};
 use egui_extras::image::RetainedImage;
 use image::open;
+use macroquad::ui::StyleBuilder;
 
 use crate::agent::Agent;
 use crate::consts::{SCREEN_WIDTH, SCREEN_HEIGHT};
@@ -29,12 +30,12 @@ impl UISystem {
         }
     }
     
-    pub fn ui_process(&mut self, fps: i32, delta: f32, agent: Option<&Agent>, signals: &mut Signals) {
+    pub fn ui_process(&mut self, fps: i32, delta: f32, time: f64, agent: Option<&Agent>, signals: &mut Signals) {
         egui_macroquad::ui(|egui_ctx| {
             self.pointer_over = egui_ctx.is_pointer_over_area();
             self.build_top_menu(egui_ctx);
             self.build_quit_window(egui_ctx);
-            self.build_monit_window(egui_ctx, fps, delta);
+            self.build_monit_window(egui_ctx, fps, delta, time);
             self.build_mouse_window(egui_ctx);
             match agent {
                 Some(agent) => {
@@ -43,6 +44,7 @@ impl UISystem {
                 None => {}
             }
             self.build_create_window(egui_ctx, signals);
+            self.build_new_sim_window(egui_ctx, signals);
         });
     }
 
@@ -57,11 +59,12 @@ impl UISystem {
                 ui.separator();
                 ui.add_space(5.0);
                 egui::menu::menu_button(ui, RichText::new("Simulation").strong(), |ui| {
-                    if ui.button(RichText::new("New Simulation").color(Color32::from_gray(150))).clicked() {
+                    if ui.button(RichText::new("New Simulation").strong().color(Color32::BLUE)).clicked() {
+                        self.state.new_sim = true;
                     }
-                    if ui.button(RichText::new("Load Simulation").color(Color32::from_gray(150))).clicked() {
+                    if ui.button(RichText::new("Load Simulation").weak().color(Color32::from_gray(100))).clicked() {
                     }
-                    if ui.button(RichText::new("Save Simulation").color(Color32::from_gray(150))).clicked() {
+                    if ui.button(RichText::new("Save Simulation").weak().color(Color32::from_gray(100))).clicked() {
                     }
                     if ui.button(RichText::new("Quit").color(Color32::RED).strong()).clicked() {
                         self.state.quit = true;
@@ -71,16 +74,16 @@ impl UISystem {
                 ui.separator();
                 ui.add_space(10.0);
                 egui::menu::menu_button(ui, RichText::new("Tools").strong(), |ui| {
-                    if ui.button(RichText::new("Performance").strong().color(Color32::YELLOW)).clicked() {
+                    if ui.button(RichText::new("Monitor").strong().color(Color32::from_gray(200))).clicked() {
                         self.state.performance = !self.state.performance;
                     }
-                    if ui.button(RichText::new("Inspector").strong().color(Color32::YELLOW)).clicked() {
+                    if ui.button(RichText::new("Inspector").strong().color(Color32::from_gray(200))).clicked() {
                         self.state.inspect = !self.state.inspect;
                     }
-                    if ui.button(RichText::new("Mouse Input").strong().color(Color32::YELLOW)).clicked() {
+                    if ui.button(RichText::new("Mouse").strong().color(Color32::from_gray(200))).clicked() {
                         self.state.mouse = !self.state.mouse;
                     }
-                    if ui.button(RichText::new("Creator").strong().color(Color32::YELLOW)).clicked() {
+                    if ui.button(RichText::new("Creator").strong().color(Color32::from_gray(200))).clicked() {
                         self.state.create = !self.state.create;
                     }
                 });
@@ -90,13 +93,16 @@ impl UISystem {
         });
     }
 
-    fn build_monit_window(&self, egui_ctx: &Context, fps: i32, delta: f32) {
+    fn build_monit_window(&self, egui_ctx: &Context, fps: i32, delta: f32, time: f64) {
         if self.state.performance {
             egui::Window::new("Monitor").default_pos((5.0, 100.0))
             .default_width(125.0)
             .show(egui_ctx, |ui| {
                 ui.label(format!("DELTA: {}ms", (delta*1000.0).round()));
+                ui.separator();
                 ui.label(format!("FPS: {}", fps));
+                ui.separator();
+                ui.label(format!("TIME: {}", time.round()));
             });
         }    
     }
@@ -150,6 +156,30 @@ impl UISystem {
         }    
     }
 
+    fn build_new_sim_window(&mut self, egui_ctx: &Context, signals: &mut Signals) {
+        if self.state.new_sim {
+            egui::Window::new("New Simulation").default_pos((SCREEN_WIDTH/2.0-65.0, SCREEN_HEIGHT/4.0))
+            .default_width(125.0)
+            .show(egui_ctx, |ui| {
+                ui.horizontal(|head| {
+                    head.heading("Start new simulation?");
+                });
+                ui.horizontal(|mid| {
+                    mid.columns(2, |columns| {
+                        if columns[0].button(RichText::new("No").color(Color32::WHITE)).clicked() {
+                            self.state.new_sim = false;
+                        }
+                        if columns[1].button(RichText::new("Yes").color(Color32::RED)).clicked() {
+                            self.state.new_sim = false;
+                            signals.new_sim = true;
+
+                        }
+                    });
+                });
+            });
+        }    
+    }
+
     fn build_create_window(&self, egui_ctx: &Context, signals: &mut Signals) {
         if self.state.create {
             egui::Window::new("Creator").default_pos((5.0, 450.0))
@@ -159,7 +189,8 @@ impl UISystem {
                     head.heading("Spawn new creature");
                 });
                 ui.horizontal(|mid| {
-                    if mid.button(RichText::new("SPAWN").strong().color(Color32::LIGHT_GREEN)).clicked() {
+                    mid.style_mut().visuals.extreme_bg_color = Color32::BLUE;
+                    if mid.button(RichText::new("SPAWN").strong().color(Color32::WHITE)).clicked() {
                         //self.state.create = false;
                         signals.spawn_agent = true;
                     }
@@ -183,6 +214,7 @@ pub struct UIState {
     pub create: bool,
     pub quit: bool,
     pub agents_num: i32,
+    pub new_sim: bool,
 }
 
 impl UIState {
@@ -194,6 +226,7 @@ impl UIState {
             create: false,
             quit: false,
             agents_num: 0,
+            new_sim: false,
         }
     }
 }

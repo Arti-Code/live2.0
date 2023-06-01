@@ -7,4 +7,4 @@ pub const AGENTS_NUM_MIN: usize=32;
 pub const AGENT_SPEED: f32=40.0;
 pub const AGENT_VISION_RANGE: f32=250.0;
 pub const AGENT_ROTATION: f32=2.0;
-pub const FIX_DT: f32 = 1.0/25.0;
+pub const FIX_DT: f32 = 1.0/30.0;

@@ -13,7 +13,7 @@ mod progress_bar;
 mod prelude;
 mod world;
 
-
+use std::{time, thread};
 use macroquad::miniquad::conf::Icon;
 use macroquad::prelude::*;
 use macroquad::window;
@@ -46,7 +46,7 @@ async fn main() {
     loop {
         sim.input();
         let selected_agent = sim.agents.get(sim.selected);
-        sim.ui.ui_process(sim.fps, sim.dt, selected_agent, &mut sim.signals);
+        sim.ui.ui_process(sim.fps, sim.dt, sim.sim_state.sim_time, selected_agent, &mut sim.signals);
         sim.update();
         sim.draw();
         sim.draw_ui();

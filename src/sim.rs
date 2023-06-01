@@ -14,6 +14,7 @@ use crate::progress_bar::*;
 
 pub struct Simulation {
     pub simulation_name: String,
+    pub sim_time: f64,
     config: SimConfig,
     pub collisions_map: CollisionsMap,
     pub detections_map: DetectionsMap,
@@ -26,13 +27,15 @@ pub struct Simulation {
     pub mouse_state: MouseState,
     pub agents: AgentsBox,
     pub dt: f32,
+    pub old_dt: f32,
     pub fps: i32,
 }
 
 impl Simulation {
     pub fn new(sim_name: &str, configuration: SimConfig) -> Self {
         Self {
-            simulation_name: sim_name.to_string(),    
+            simulation_name: sim_name.to_string(),
+            sim_time: 0.0,    
             config: configuration,
             collisions_map: CollisionsMap::new(),
             detections_map: DetectionsMap::new(),
@@ -40,13 +43,29 @@ impl Simulation {
             sim_state: SimState::new(),
             signals: Signals::new(),
             selected: 0,
-            //selected_agent: None,
+            old_dt: 0.0,
             select_phase: 0.0,
             mouse_state: MouseState { pos: Vec2::NAN},
             agents: AgentsBox::new(),
             dt: f32::NAN,
             fps: 0,
         }
+    }
+
+    fn reset_sim(&mut self) {
+        self.agents.agents.clear();
+        self.sim_time = 0.0;
+        self.collisions_map = CollisionsMap::new();
+        self.detections_map = DetectionsMap::new();
+        //self.ui = UISystem::new();
+        self.sim_state = SimState::new();
+        self.signals = Signals::new();
+        self.selected = 0;
+        self.old_dt = 0.0;
+        self.select_phase = 0.0;
+        self.mouse_state = MouseState { pos: Vec2::NAN};
+        self.dt = f32::NAN;
+        self.fps = 0;
     }
 
     pub fn init(&mut self) {
@@ -111,6 +130,10 @@ impl Simulation {
             self.agents.add_agent(agent);
             self.signals.spawn_agent = false;
         }
+        if self.signals.new_sim {
+            self.signals.new_sim = false;
+            self.reset_sim();
+        }
     }
 
     fn get_selected(&self) -> Option<&Agent> {
@@ -141,7 +164,9 @@ impl Simulation {
     }
 
     fn update_sim_state(&mut self) {
+        //self.old_dt = self.dt;
         self.dt = get_frame_time();
+        self.sim_state.sim_time += self.dt as f64;
         self.fps = get_fps();
         let (mouse_x, mouse_y) = mouse_position();
         self.mouse_state.pos = Vec2::new(mouse_x, mouse_y);
@@ -261,12 +286,14 @@ impl SimConfig {
 //?         [[[SIGNALS]]]
 pub struct Signals {
     pub spawn_agent: bool,
+    pub new_sim: bool,
 }
 
 impl Signals {
     pub fn new() -> Self {
         Self {
             spawn_agent: false,
+            new_sim: false,
         }
     }
 }
@@ -274,12 +301,14 @@ impl Signals {
 //?         [[[SIM_STATE]]]
 pub struct SimState {
     pub agents_num: i32,
+    pub sim_time: f64,
 }
 
 impl SimState {
     pub fn new() -> Self {
         Self {
             agents_num: 0,
+            sim_time: 0.0,
         }
     }
 }
