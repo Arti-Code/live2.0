@@ -1,6 +1,6 @@
 [package]
 name = "live2"
-version = "0.2.8"
+version = "0.3.1"
 edition = "2021"
 authors = ["Artur Gwoździowski"]
 
@@ -13,7 +13,7 @@ nalgebra = { version = "0.32.2", features = ["convert-glam020"] }
 glam = "0.24.0"
 egui-macroquad = "0.15.0"
 egui = "0.21.0"
-egui_extras = "0.21.0"
+egui_extras = {version = "0.21.0", features = ["image"]}
 image = { version = "0.24", features = ["jpeg", "png"] }
 rand = "0.8.5"
 

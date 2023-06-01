@@ -36,6 +36,7 @@ fn build_top_menu(egui_ctx: &Context, ui_state: &mut UIState) {
         egui::TopBottomPanel::top("top_panel").show(egui_ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 //ui.image(texture_id, size)
+                //ui.image(texture_id, size)
                 ui.heading(RichText::new( "LIVE 2.0").color(Color32::GREEN).strong());
                 ui.add_space(5.0);
                 ui.separator();
@@ -55,13 +56,13 @@ fn build_top_menu(egui_ctx: &Context, ui_state: &mut UIState) {
                 ui.separator();
                 ui.add_space(10.0);
                 egui::menu::menu_button(ui, RichText::new("Tools").strong(), |ui| {
-                    if ui.button(RichText::new("Performance Monitor").strong().color(Color32::YELLOW)).clicked() {
+                    if ui.button(RichText::new("Performance").strong().color(Color32::YELLOW)).clicked() {
                         ui_state.performance = !ui_state.performance;
                     }
                     if ui.button(RichText::new("Inspector").strong().color(Color32::YELLOW)).clicked() {
                         ui_state.inspect = !ui_state.inspect;
                     }
-                    if ui.button(RichText::new("Mouse").strong().color(Color32::YELLOW)).clicked() {
+                    if ui.button(RichText::new("Mouse Input").strong().color(Color32::YELLOW)).clicked() {
                         ui_state.mouse = !ui_state.mouse;
                     }
                     if ui.button(RichText::new("Creator").strong().color(Color32::YELLOW)).clicked() {

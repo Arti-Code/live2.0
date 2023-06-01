@@ -125,6 +125,13 @@ impl AgentsBox {
         }
     }
 
+    pub fn add_many_agents(&mut self, agents_num: usize) {
+        for _ in 0..agents_num {
+            let agent = Agent::new();
+            _ = self.add_agent(agent);
+        }
+    }
+
     pub fn add_agent(&mut self, agent: Agent) -> u32 {
         let key: u32 = thread_rng().gen::<u32>();
         self.agents.insert(key, agent);
