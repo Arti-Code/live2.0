@@ -51,3 +51,21 @@ pub fn wrap_around(v: &Vec2) -> Vec2 {
     }
     return vr;
 }
+
+
+//?         [[[SIGNALS]]]
+pub struct Signals {
+    pub spawn_agent: bool,
+    pub new_sim: bool,
+    pub new_sim_name: String,
+}
+
+impl Signals {
+    pub fn new() -> Self {
+        Self {
+            spawn_agent: false,
+            new_sim: false,
+            new_sim_name: String::new(),
+        }
+    }
+}

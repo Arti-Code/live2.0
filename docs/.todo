@@ -1,6 +1,7 @@
 Live2:
     0.3:
-        ☐ fps count control
+        ☐ restart simulation @started(23-06-01 22:51)
+        ✘ fps count control @cancelled(23-06-01 22:50)
         ✔ init rewrite code
         ✔ simulation struct: rewrite [ init() ] @done(23-06-01 16:53)
         ✔ simulation struct: rewrite [ update() ] @done(23-06-01 18:56)

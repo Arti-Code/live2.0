@@ -10,10 +10,12 @@ use crate::consts::*;
 use crate::kinetic::*;
 use crate::ui::*;
 use crate::progress_bar::*;
+use crate::util::*;
 
 
 pub struct Simulation {
     pub simulation_name: String,
+    pub running: bool,
     pub sim_time: f64,
     config: SimConfig,
     pub collisions_map: CollisionsMap,
@@ -32,9 +34,10 @@ pub struct Simulation {
 }
 
 impl Simulation {
-    pub fn new(sim_name: &str, configuration: SimConfig) -> Self {
+    pub fn new(configuration: SimConfig) -> Self {
         Self {
-            simulation_name: sim_name.to_string(),
+            simulation_name: String::new(),
+            running: false,
             sim_time: 0.0,    
             config: configuration,
             collisions_map: CollisionsMap::new(),
@@ -235,18 +238,15 @@ impl Simulation {
         return hits;
     }
 
+    pub fn process_ui(&mut self) {
+        let marked_agent = self.agents.get(self.selected);
+        self.ui.ui_process(self.fps, self.dt, self.sim_time, marked_agent, &mut self.signals)
+    }
+
     pub fn draw_ui(&self) {
         self.ui.ui_draw();
     }
 }
-
-
-
-
-
-
-
-
 
 
 //?         [[[SIM_CONFIG]]]
@@ -279,21 +279,6 @@ impl SimConfig {
             agent_speed: agent_speed,
             agent_rotation: agent_turn,
             agent_vision_range: vision_range,
-        }
-    }
-}
-
-//?         [[[SIGNALS]]]
-pub struct Signals {
-    pub spawn_agent: bool,
-    pub new_sim: bool,
-}
-
-impl Signals {
-    pub fn new() -> Self {
-        Self {
-            spawn_agent: false,
-            new_sim: false,
         }
     }
 }

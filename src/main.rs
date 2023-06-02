@@ -40,13 +40,12 @@ fn app_configuration() -> Conf {
 #[macroquad::main(app_configuration)]
 async fn main() {
     let cfg = SimConfig::default();
-    let mut sim = Simulation::new(&"Simulation One", cfg);
+    let mut sim = Simulation::new(cfg);
     sim.init();    
     
     loop {
         sim.input();
-        let selected_agent = sim.agents.get(sim.selected);
-        sim.ui.ui_process(sim.fps, sim.dt, sim.sim_state.sim_time, selected_agent, &mut sim.signals);
+        sim.process_ui();
         sim.update();
         sim.draw();
         sim.draw_ui();
