@@ -1,8 +1,9 @@
 [package]
 name = "live2"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2021"
-authors = ["Artur Gwoździowski"]
+authors = ["Artur Gwoździowski <gwozdyk@gmain.com>"]
+keywords = ["neuroevolution", "genethics algorithm", "artificial inteligence", "simulation"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

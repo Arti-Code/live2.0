@@ -2,20 +2,19 @@
 
 
 use std::f32::consts::PI;
-
 use macroquad::prelude::*;
 use egui_macroquad;
 use crate::agent::*;
 use crate::consts::*;
 use crate::kinetic::*;
 use crate::ui::*;
-use crate::progress_bar::*;
 use crate::util::*;
 
 
 pub struct Simulation {
     pub simulation_name: String,
     pub camera: Camera2D,
+    cam_config: CamConfig,
     pub running: bool,
     pub sim_time: f64,
     config: SimConfig,
@@ -26,7 +25,6 @@ pub struct Simulation {
     pub signals: Signals,
     select_phase: f32,
     pub selected: u32,
-    //selected_agent: Option<&Agent>,
     pub mouse_state: MouseState,
     pub agents: AgentsBox,
     pub dt: f32,
@@ -34,15 +32,31 @@ pub struct Simulation {
     pub fps: i32,
 }
 
+struct CamConfig {
+    target: Vec2,
+    zoom: f32,
+    offset: Vec2,
+    ratio: f32,
+}
+
 impl Simulation {
     pub fn new(configuration: SimConfig) -> Self {
-        let zoom = 1.0/700.0;
+        let screen_ratio: f32 = SCREEN_WIDTH/SCREEN_HEIGHT;
+        let ratio = SCREEN_WIDTH/SCREEN_HEIGHT;
+        let zoom = 1.0/1000.0;
         Self {
             simulation_name: String::new(),
+            cam_config: CamConfig { 
+                zoom: zoom, 
+                ratio:  ratio,
+                target: Vec2 { x: 0.0, y: 0.0 },
+                offset: Vec2 { x: 0.0, y: 0.0 }, 
+            },
             camera: Camera2D {
-                zoom: Vec2 {x: zoom, y: zoom*(SCREEN_WIDTH/SCREEN_HEIGHT)},
-                target: Vec2 {x: -0.5, y: -0.5*(SCREEN_HEIGHT/SCREEN_WIDTH)},
-                offset: Vec2 {x: -0.5, y: -0.5*(SCREEN_HEIGHT/SCREEN_WIDTH)},
+                //zoom: Vec2 {x: zoom*ratio.0, y: zoom*ratio.0},
+                zoom: Vec2 {x: zoom, y: zoom*ratio},
+                target: Vec2 {x: -0.5, y: -0.5},
+                offset: Vec2 {x: -0.5, y: -0.5},
                 rotation: 0.0,
                 render_target: None,
                 viewport: None,
@@ -78,7 +92,6 @@ impl Simulation {
         self.sim_time = 0.0;
         self.collisions_map = CollisionsMap::new();
         self.detections_map = DetectionsMap::new();
-        //self.ui = UISystem::new();
         self.sim_state = SimState::new();
         self.sim_state.sim_name = String::from(&self.simulation_name);
         self.signals = Signals::new();
@@ -129,7 +142,7 @@ impl Simulation {
     }
 
     pub fn draw(&self) {
-        //set_camera(&self.camera);
+        set_camera(&self.camera);
         //set_default_camera();
         clear_background(BLACK);
         for (id, agent) in self.agents.get_iter() {
@@ -175,6 +188,52 @@ impl Simulation {
     }
 
     pub fn input(&mut self) {
+        self.mouse_input();
+        self.keys_input();
+    }
+
+    fn keys_input(&mut self) {
+        if is_key_pressed(KeyCode::KpAdd) {
+            let ratio = self.cam_config.ratio;
+            self.camera.zoom += Vec2::new(0.0001, 0.0001*ratio);
+        }
+        if is_key_pressed(KeyCode::KpSubtract) {
+            if self.camera.zoom.x > 0.0001 {
+                let ratio = self.cam_config.ratio;
+                self.camera.zoom -= Vec2::new(0.0001, 0.0001*ratio);
+            }
+        }
+        if is_key_pressed(KeyCode::Kp4) {
+            self.camera.offset.x += 0.1;
+        }
+        if is_key_pressed(KeyCode::Kp6) {
+            self.camera.offset.x -= 0.1;
+        }
+        if is_key_pressed(KeyCode::Kp8) {
+            self.camera.offset.y -= 0.1;
+        }
+        if is_key_pressed(KeyCode::Kp2) {
+            self.camera.offset.y += 0.1;
+        }
+        if is_key_pressed(KeyCode::Left) {
+            println!("target");
+            self.camera.target.x += 0.1;
+        }
+        if is_key_pressed(KeyCode::Right) {
+            println!("target");
+            self.camera.target.x -= 0.1;
+        }
+        if is_key_pressed(KeyCode::Up) {
+            println!("target");
+            self.camera.target.y -= 0.1;
+        }
+        if is_key_pressed(KeyCode::Down) {
+            println!("target");
+            self.camera.target.y += 0.1;
+        }
+    }
+
+    fn mouse_input(&mut self) {
         if is_mouse_button_released(MouseButton::Left) {
             if !self.ui.pointer_over {
                 self.selected = 0;
