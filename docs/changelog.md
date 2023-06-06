@@ -12,6 +12,7 @@
 ##### v0.3
 
 - [x] code refactor (sim structs, some other small changes)
+- [x] start/restart new simulation with custom name
 
 ##### v0.2
 

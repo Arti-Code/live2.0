@@ -15,6 +15,7 @@ use crate::util::*;
 
 pub struct Simulation {
     pub simulation_name: String,
+    pub camera: Camera2D,
     pub running: bool,
     pub sim_time: f64,
     config: SimConfig,
@@ -35,8 +36,17 @@ pub struct Simulation {
 
 impl Simulation {
     pub fn new(configuration: SimConfig) -> Self {
+        let zoom = 1.0/700.0;
         Self {
             simulation_name: String::new(),
+            camera: Camera2D {
+                zoom: Vec2 {x: zoom, y: zoom*(SCREEN_WIDTH/SCREEN_HEIGHT)},
+                target: Vec2 {x: -0.5, y: -0.5*(SCREEN_HEIGHT/SCREEN_WIDTH)},
+                offset: Vec2 {x: -0.5, y: -0.5*(SCREEN_HEIGHT/SCREEN_WIDTH)},
+                rotation: 0.0,
+                render_target: None,
+                viewport: None,
+            },
             running: false,
             sim_time: 0.0,    
             config: configuration,
@@ -55,13 +65,22 @@ impl Simulation {
         }
     }
 
-    fn reset_sim(&mut self) {
+    fn reset_sim(&mut self, sim_name: Option<&str>) {
+        self.simulation_name = match sim_name {
+            Some(name) => {
+                name.to_string()
+            },
+            None => {
+                String::new()
+            },
+        };
         self.agents.agents.clear();
         self.sim_time = 0.0;
         self.collisions_map = CollisionsMap::new();
         self.detections_map = DetectionsMap::new();
         //self.ui = UISystem::new();
         self.sim_state = SimState::new();
+        self.sim_state.sim_name = String::from(&self.simulation_name);
         self.signals = Signals::new();
         self.selected = 0;
         self.old_dt = 0.0;
@@ -69,6 +88,7 @@ impl Simulation {
         self.mouse_state = MouseState { pos: Vec2::NAN};
         self.dt = f32::NAN;
         self.fps = 0;
+        self.running = true;
     }
 
     pub fn init(&mut self) {
@@ -83,13 +103,13 @@ impl Simulation {
         self.calc_selection_time();
         self.collisions_map = self.map_collisions();
         self.detections_map = self.map_detections();
-        
+        let dt = self.sim_state.dt;
         for (id, a) in self.agents.get_iter_mut() {
             let uid = *id;
-            a.update(self.dt);
+            a.update(dt);
             match self.collisions_map.get_collision(uid) {
                 Some(hit) => {
-                    a.update_collision(&hit.normal, hit.overlap, self.dt);
+                    a.update_collision(&hit.normal, hit.overlap, dt);
                 },
                 None => {
     
@@ -109,6 +129,8 @@ impl Simulation {
     }
 
     pub fn draw(&self) {
+        //set_camera(&self.camera);
+        //set_default_camera();
         clear_background(BLACK);
         for (id, agent) in self.agents.get_iter() {
             let mut draw_field_of_view: bool=false;
@@ -127,7 +149,7 @@ impl Simulation {
         };
     }
 
-    fn signals_check(&mut self) {
+    pub fn signals_check(&mut self) {
         if self.signals.spawn_agent {
             let agent = Agent::new();
             self.agents.add_agent(agent);
@@ -135,7 +157,9 @@ impl Simulation {
         }
         if self.signals.new_sim {
             self.signals.new_sim = false;
-            self.reset_sim();
+            //if !self.signals.new_sim_name.is_empty() {
+            self.reset_sim(Some(&self.signals.new_sim_name.to_owned()));
+            //}
         }
     }
 
@@ -168,9 +192,11 @@ impl Simulation {
 
     fn update_sim_state(&mut self) {
         //self.old_dt = self.dt;
-        self.dt = get_frame_time();
-        self.sim_state.sim_time += self.dt as f64;
-        self.fps = get_fps();
+        //self.dt = get_frame_time();
+        //self.fps = get_fps();
+        self.sim_state.fps = get_fps();
+        self.sim_state.dt = get_frame_time();
+        self.sim_state.sim_time += self.sim_state.dt as f64;
         let (mouse_x, mouse_y) = mouse_position();
         self.mouse_state.pos = Vec2::new(mouse_x, mouse_y);
         self.sim_state.agents_num = self.agents.count() as i32;
@@ -184,7 +210,7 @@ impl Simulation {
     }
 
     fn calc_selection_time(&mut self) {
-        self.select_phase += self.dt*4.0;
+        self.select_phase += self.sim_state.dt*4.0;
         self.select_phase = self.select_phase%(2.0*PI as f32);
     }
 
@@ -240,11 +266,15 @@ impl Simulation {
 
     pub fn process_ui(&mut self) {
         let marked_agent = self.agents.get(self.selected);
-        self.ui.ui_process(self.fps, self.dt, self.sim_time, marked_agent, &mut self.signals)
+        self.ui.ui_process(&self.sim_state, marked_agent, &mut self.signals)
     }
 
     pub fn draw_ui(&self) {
         self.ui.ui_draw();
+    }
+
+    pub fn is_running(&self) -> bool {
+        return self.running;
     }
 }
 
@@ -285,15 +315,21 @@ impl SimConfig {
 
 //?         [[[SIM_STATE]]]
 pub struct SimState {
+    pub sim_name: String,
     pub agents_num: i32,
     pub sim_time: f64,
+    pub fps: i32,
+    pub dt: f32,
 }
 
 impl SimState {
     pub fn new() -> Self {
         Self {
+            sim_name: String::new(),
             agents_num: 0,
             sim_time: 0.0,
+            fps: 0,
+            dt: 0.0,
         }
     }
 }

@@ -46,8 +46,13 @@ async fn main() {
     loop {
         sim.input();
         sim.process_ui();
-        sim.update();
-        sim.draw();
+        if sim.is_running() {
+            sim.update();
+            sim.draw();
+        }
+        else {
+            sim.signals_check();
+        }
         sim.draw_ui();
         next_frame().await;
     }
