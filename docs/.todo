@@ -1,21 +1,23 @@
 Live2:
     0.3:
-        ✔ camera translation @started(23-06-06 11:40) @done(23-06-06 12:39) @lasted(59m57s)
-        ✔ camera zoom in/zoom out @started(23-06-06 11:40) @done(23-06-06 12:39) @lasted(59m59s)
-        ✔ new simulation naming @done(23-06-06 11:40)
+        ✔ camera translation
+        ✔ camera zoom in/zoom out
+        ✔ new simulation naming
         ☐ options window
         ☐ camera control window
         ☐ timeflow window
-        ✔ restart simulation @started(23-06-01 22:51) @done(23-06-03 03:44) @lasted(1d4h53m12s)
-        ✘ fps count control @cancelled(23-06-01 22:50)
+        ✔ restart simulation
+        ✘ fps count control
         ✔ init rewrite code
-        ✔ simulation struct: rewrite [ init() ] @done(23-06-01 16:53)
-        ✔ simulation struct: rewrite [ update() ] @done(23-06-01 18:56)
-        ✔ simulation struct: rewrite [ draw() ] @done(23-06-01 16:53)
-        ✔ simulation struct: rewrite [ input() ] @done(23-06-01 18:56)
-        ✔ simulation struct: rewrite [ collisions_mapper ] @done(23-06-03 03:44)
-        ✔ simulation struct: rewrite [ detection_mapper ] @done(23-06-03 03:44)
-        ✔ fix detection range @done(23-06-01 16:53)
+        ✔ simulation struct: rewrite [ init() ]
+        ✔ simulation struct: rewrite [ update() ]
+        ✔ simulation struct: rewrite [ draw() ]
+        ✔ simulation struct: rewrite [ input() ]
+        ✔ simulation struct: rewrite [ collisions_mapper ]
+        ✔ simulation struct: rewrite [ detection_mapper ]
+        ✔ fix detection range
+        ☐ fix: select agent by mouse after camera transformations update
+        ☐ fix: initial camera parameters
     0.2:
         ✘ camera viewport
         ✘ camera translation, zoom in/zoom out
