@@ -12,7 +12,7 @@ mod neuro;
 mod progress_bar;
 mod prelude;
 mod world;
-pub(crate) mod source;
+mod source;
 
 use std::{time, thread};
 use macroquad::miniquad::conf::Icon;
@@ -26,7 +26,7 @@ use crate::agent::*;
 use crate::world::*;
 use macroquad::time::*;
 use crate::ui::*;
-//pub use crate::source::*;
+pub use crate::source::*;
 
 fn app_configuration() -> Conf {
     Conf{

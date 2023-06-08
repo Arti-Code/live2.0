@@ -46,9 +46,7 @@ impl Source {
         let y1 = y0 + dir.y * self.size*1.0;
         let x2 = x0 + dir.x * self.size*2.0;
         let y2 = y0 + dir.y * self.size*2.0;
-        draw_circle_lines(x0, y0, self.size, 2.0, self.color);
-        draw_circle(x0, y0, (self.size/2.0)*pulse.abs(), self.color);
-        draw_line(x1, y1, x2, y2, 1.0, self.color);
+        draw_circle(x0, y0, self.size, self.color);
     }
     pub fn update(&mut self, dt: f32){
         let dir = Vec2::from_angle(self.rot);
@@ -86,7 +84,7 @@ impl SourcesBox {
 
     pub fn add_source(&mut self, source: Source) -> u32 {
         let key: u32 = thread_rng().gen::<u32>();
-        self.sources.insert(key, Source);
+        self.sources.insert(key, source);
         return key;
     }
 
