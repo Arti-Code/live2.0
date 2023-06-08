@@ -11,13 +11,19 @@
 
 ##### v0.3
 
+- [ ] improve custom camera controll
+- [ ] reset camera transformations
+- [ ] camera transformation info window
+- [x] camera translation
+- [x] camera zoom-in / zoom-out
 - [x] code refactor (sim structs, some other small changes)
+- [x] start/restart new simulation with custom name
 
 ##### v0.2
 
 - [x] visual detection in range
-- [ ] camera movement
-- [ ] camera zoom in/zoom out
+- [ ] ~~camera movement~~
+- [ ] ~~camera zoom in/zoom out~~
 - [x] circles collision
 - [x] using parry2d
 - [x] custom font

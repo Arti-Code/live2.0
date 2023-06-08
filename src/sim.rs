@@ -2,18 +2,22 @@
 
 
 use std::f32::consts::PI;
-
 use macroquad::prelude::*;
 use egui_macroquad;
 use crate::agent::*;
 use crate::consts::*;
 use crate::kinetic::*;
 use crate::ui::*;
-use crate::progress_bar::*;
+use crate::util::*;
 
 
 pub struct Simulation {
     pub simulation_name: String,
+    pub world_size: Vec2,
+    pub camera: Camera2D,
+    cam_config: CamConfig,
+    pub running: bool,
+    pub sim_time: f64,
     config: SimConfig,
     pub collisions_map: CollisionsMap,
     pub detections_map: DetectionsMap,
@@ -22,17 +26,46 @@ pub struct Simulation {
     pub signals: Signals,
     select_phase: f32,
     pub selected: u32,
-    //selected_agent: Option<&Agent>,
     pub mouse_state: MouseState,
     pub agents: AgentsBox,
     pub dt: f32,
+    pub old_dt: f32,
     pub fps: i32,
 }
 
+struct CamConfig {
+    target: Vec2,
+    zoom: f32,
+    offset: Vec2,
+    ratio: f32,
+}
+
 impl Simulation {
-    pub fn new(sim_name: &str, configuration: SimConfig) -> Self {
+    pub fn new(configuration: SimConfig) -> Self {
+        let screen_ratio: f32 = SCREEN_WIDTH/SCREEN_HEIGHT;
+        let ratio_y = SCREEN_WIDTH/SCREEN_HEIGHT;
+        let ratio_x = SCREEN_HEIGHT/SCREEN_WIDTH;
+        let zoom = 1.0/1000.0;
         Self {
-            simulation_name: sim_name.to_string(),    
+            simulation_name: String::new(),
+            world_size: Vec2 { x: SCREEN_WIDTH, y: SCREEN_HEIGHT },
+            cam_config: CamConfig { 
+                zoom: zoom, 
+                ratio:  ratio_y,
+                target: Vec2 { x: 0.0, y: 0.0 },
+                offset: Vec2 { x: 0.0, y: 0.0 }, 
+            },
+            camera: Camera2D {
+                //zoom: Vec2 {x: zoom*ratio.0, y: zoom*ratio.0},
+                zoom: Vec2 {x: zoom, y: zoom*ratio_y},
+                target: Vec2 {x: 0.0, y: 0.0},
+                offset: Vec2 {x: 0.5, y: 0.5},
+                rotation: 0.0,
+                render_target: None,
+                viewport: None,
+            },
+            running: false,
+            sim_time: 0.0,    
             config: configuration,
             collisions_map: CollisionsMap::new(),
             detections_map: DetectionsMap::new(),
@@ -40,7 +73,7 @@ impl Simulation {
             sim_state: SimState::new(),
             signals: Signals::new(),
             selected: 0,
-            //selected_agent: None,
+            old_dt: 0.0,
             select_phase: 0.0,
             mouse_state: MouseState { pos: Vec2::NAN},
             agents: AgentsBox::new(),
@@ -49,9 +82,39 @@ impl Simulation {
         }
     }
 
+    fn reset_sim(&mut self, sim_name: Option<&str>) {
+        self.simulation_name = match sim_name {
+            Some(name) => {
+                name.to_string()
+            },
+            None => {
+                String::new()
+            },
+        };
+        self.agents.agents.clear();
+        self.sim_time = 0.0;
+        self.collisions_map = CollisionsMap::new();
+        self.detections_map = DetectionsMap::new();
+        self.sim_state = SimState::new();
+        self.sim_state.sim_name = String::from(&self.simulation_name);
+        self.signals = Signals::new();
+        self.selected = 0;
+        self.old_dt = 0.0;
+        self.select_phase = 0.0;
+        self.mouse_state = MouseState { pos: Vec2::NAN};
+        self.dt = f32::NAN;
+        self.fps = 0;
+        self.running = true;
+    }
+
     pub fn init(&mut self) {
         let agents_num = self.config.agents_init_num;
         self.agents.add_many_agents(agents_num as usize);
+    }
+
+    pub fn autorun_new_sim(&mut self) {
+        self.signals.new_sim = true;
+        self.signals.new_sim_name = "Simulation".to_string();
     }
 
     pub fn update(&mut self) {
@@ -61,13 +124,13 @@ impl Simulation {
         self.calc_selection_time();
         self.collisions_map = self.map_collisions();
         self.detections_map = self.map_detections();
-        
+        let dt = self.sim_state.dt;
         for (id, a) in self.agents.get_iter_mut() {
             let uid = *id;
-            a.update(self.dt);
+            a.update(dt);
             match self.collisions_map.get_collision(uid) {
                 Some(hit) => {
-                    a.update_collision(&hit.normal, hit.overlap, self.dt);
+                    a.update_collision(&hit.normal, hit.overlap, dt);
                 },
                 None => {
     
@@ -87,7 +150,10 @@ impl Simulation {
     }
 
     pub fn draw(&self) {
+        //set_camera(&self.camera);
+        set_default_camera();
         clear_background(BLACK);
+        self.draw_grid(50);
         for (id, agent) in self.agents.get_iter() {
             let mut draw_field_of_view: bool=false;
             if *id == self.selected {
@@ -105,11 +171,30 @@ impl Simulation {
         };
     }
 
-    fn signals_check(&mut self) {
+    fn draw_grid(&self, cell_size: u32) {
+        let w = self.world_size.x;
+        let h = self.world_size.y;
+        let col_num = ((w/cell_size as f32).floor() as u32);
+        let row_num = ((h/cell_size as f32).floor() as u32);
+        //draw_grid(100, 20.0, GRAY, DARKGRAY);
+        for x in 0..col_num+1 {
+            for y in 0..row_num+1 {
+                draw_circle((x*cell_size) as f32, (y*cell_size )as f32, 1.0, GRAY);
+            }
+        }
+    }
+
+    pub fn signals_check(&mut self) {
         if self.signals.spawn_agent {
             let agent = Agent::new();
             self.agents.add_agent(agent);
             self.signals.spawn_agent = false;
+        }
+        if self.signals.new_sim {
+            self.signals.new_sim = false;
+            //if !self.signals.new_sim_name.is_empty() {
+            self.reset_sim(Some(&self.signals.new_sim_name.to_owned()));
+            //}
         }
     }
 
@@ -125,11 +210,65 @@ impl Simulation {
     }
 
     pub fn input(&mut self) {
+        self.mouse_input();
+        self.keys_input();
+    }
+
+    fn keys_input(&mut self) {
+        if is_key_pressed(KeyCode::KpAdd) {
+            let ratio = self.cam_config.ratio;
+            self.camera.zoom += Vec2::new(0.0001, 0.0001*ratio);
+        }
+        if is_key_pressed(KeyCode::KpSubtract) {
+            if self.camera.zoom.x > 0.0001 {
+                let ratio = self.cam_config.ratio;
+                self.camera.zoom -= Vec2::new(0.0001, 0.0001*ratio);
+            }
+        }
+        if is_key_pressed(KeyCode::Kp4) {
+            self.camera.offset.x += 0.1;
+        }
+        if is_key_pressed(KeyCode::Kp6) {
+            self.camera.offset.x -= 0.1;
+        }
+        if is_key_pressed(KeyCode::Kp8) {
+            self.camera.offset.y -= 0.1;
+        }
+        if is_key_pressed(KeyCode::Kp2) {
+            self.camera.offset.y += 0.1;
+        }
+        if is_key_pressed(KeyCode::Left) {
+            println!("target");
+            self.camera.target.x += 0.1;
+        }
+        if is_key_pressed(KeyCode::Right) {
+            println!("target");
+            self.camera.target.x -= 0.1;
+        }
+        if is_key_pressed(KeyCode::Up) {
+            println!("target");
+            self.camera.target.y -= 0.1;
+        }
+        if is_key_pressed(KeyCode::Down) {
+            println!("target");
+            self.camera.target.y += 0.1;
+        }
+    }
+
+    fn mouse_input(&mut self) {
         if is_mouse_button_released(MouseButton::Left) {
             if !self.ui.pointer_over {
                 self.selected = 0;
                 let (mouse_posx, mouse_posy) = mouse_position();
+                let mut offset = self.camera.offset;
+                let rel_x = mouse_posx + (offset.x*SCREEN_WIDTH);
+                let rel_y = mouse_posy + (offset.y*SCREEN_HEIGHT);
+                //let rel_x = mouse_posx/SCREEN_WIDTH;
+                //let rel_y = mouse_posy/SCREEN_HEIGHT;
                 let mouse_pos = Vec2::new(mouse_posx, mouse_posy);
+                println!("pos mouse: [{} | {}]", mouse_posx, mouse_posy);
+                println!("rel mouse: [{} | {}]", rel_x, rel_y);
+                println!("offset: [{} | {}]", offset.x, offset.y);
                 for (id, agent) in self.agents.get_iter() {
                     if contact_mouse(mouse_pos, agent.pos, agent.size) {
                         self.selected = *id;
@@ -141,8 +280,9 @@ impl Simulation {
     }
 
     fn update_sim_state(&mut self) {
-        self.dt = get_frame_time();
-        self.fps = get_fps();
+        self.sim_state.fps = get_fps();
+        self.sim_state.dt = get_frame_time();
+        self.sim_state.sim_time += self.sim_state.dt as f64;
         let (mouse_x, mouse_y) = mouse_position();
         self.mouse_state.pos = Vec2::new(mouse_x, mouse_y);
         self.sim_state.agents_num = self.agents.count() as i32;
@@ -156,7 +296,7 @@ impl Simulation {
     }
 
     fn calc_selection_time(&mut self) {
-        self.select_phase += self.dt*4.0;
+        self.select_phase += self.sim_state.dt*4.0;
         self.select_phase = self.select_phase%(2.0*PI as f32);
     }
 
@@ -210,10 +350,20 @@ impl Simulation {
         return hits;
     }
 
+    pub fn process_ui(&mut self) {
+        let marked_agent = self.agents.get(self.selected);
+        self.ui.ui_process(&self.sim_state, marked_agent, &mut self.signals)
+    }
+
     pub fn draw_ui(&self) {
         self.ui.ui_draw();
     }
+
+    pub fn is_running(&self) -> bool {
+        return self.running;
+    }
 }
+
 
 //?         [[[SIM_CONFIG]]]
 #[derive(Clone, Copy)]
@@ -249,28 +399,23 @@ impl SimConfig {
     }
 }
 
-//?         [[[SIGNALS]]]
-pub struct Signals {
-    pub spawn_agent: bool,
-}
-
-impl Signals {
-    pub fn new() -> Self {
-        Self {
-            spawn_agent: false,
-        }
-    }
-}
-
 //?         [[[SIM_STATE]]]
 pub struct SimState {
+    pub sim_name: String,
     pub agents_num: i32,
+    pub sim_time: f64,
+    pub fps: i32,
+    pub dt: f32,
 }
 
 impl SimState {
     pub fn new() -> Self {
         Self {
+            sim_name: String::new(),
             agents_num: 0,
+            sim_time: 0.0,
+            fps: 0,
+            dt: 0.0,
         }
     }
 }

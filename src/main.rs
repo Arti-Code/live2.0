@@ -13,29 +13,18 @@ mod progress_bar;
 mod prelude;
 mod world;
 
-use std::f32::consts::PI;
-use std::thread::sleep;
-use std::time::Duration;
+use std::{time, thread};
 use macroquad::miniquad::conf::Icon;
 use macroquad::prelude::*;
-use macroquad::window; 
-use macroquad::file::*;
-use kinetic::*;
-use parry2d::query::details::contact_ball_ball;
-use egui_extras::RetainedImage;
+use macroquad::window;
 use crate::sim::*;
-use crate::prelude::*;
 use crate::world::*;
 use crate::consts::*;
 use crate::util::*;
 use crate::agent::*;
 use crate::world::*;
 use macroquad::time::*;
-use std::collections::VecDeque;
-use parry2d::query::*;
-use parry2d::shape::*;
 use crate::ui::*;
-use crate::timer::*;
 
 fn app_configuration() -> Conf {
     Conf{
@@ -51,37 +40,21 @@ fn app_configuration() -> Conf {
 #[macroquad::main(app_configuration)]
 async fn main() {
     let cfg = SimConfig::default();
-    let mut sim = Simulation::new(&"Simulation One", cfg);
-    sim.init();    
+    let mut sim = Simulation::new(cfg);
+    sim.init();
+    sim.autorun_new_sim();    
     
     loop {
         sim.input();
-        let selected_agent = sim.agents.get(sim.selected);
-        sim.ui.ui_process(sim.fps, sim.dt, selected_agent, &mut sim.signals);
-        sim.update();
-        sim.draw();
+        sim.process_ui();
+        if sim.is_running() {
+            sim.update();
+            sim.draw();
+        }
+        else {
+            sim.signals_check();
+        }
         sim.draw_ui();
         next_frame().await;
     }
 }
-
-/* fn check_selected(agent: &Agent, agents: &AgentsBox, selected: u32) -> bool {
-    match agents.get(selected) {
-        Some(selected_agent) => {
-            return true;
-        },
-        Some(_) => {
-            return false;
-        },
-        None => {
-            return false;
-        },
-    }
-} */
-
-/* async fn wait(delta: f32) {
-    let t = FIX_DT - delta;
-    if t > 0.0 {
-        sleep(Duration::from_secs_f32(t));
-    }
-} */
