@@ -3,3 +3,6 @@ Cargo.lock
 live2.0.exe
 docs/changelog.md
 live2.exe
+public/live2.wasm
+src/lib.rs
+public/index.html

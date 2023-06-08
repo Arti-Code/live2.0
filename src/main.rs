@@ -41,7 +41,8 @@ fn app_configuration() -> Conf {
 async fn main() {
     let cfg = SimConfig::default();
     let mut sim = Simulation::new(cfg);
-    sim.init();    
+    sim.init();
+    sim.autorun_new_sim();    
     
     loop {
         sim.input();

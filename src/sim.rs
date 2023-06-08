@@ -13,6 +13,7 @@ use crate::util::*;
 
 pub struct Simulation {
     pub simulation_name: String,
+    pub world_size: Vec2,
     pub camera: Camera2D,
     cam_config: CamConfig,
     pub running: bool,
@@ -42,21 +43,23 @@ struct CamConfig {
 impl Simulation {
     pub fn new(configuration: SimConfig) -> Self {
         let screen_ratio: f32 = SCREEN_WIDTH/SCREEN_HEIGHT;
-        let ratio = SCREEN_WIDTH/SCREEN_HEIGHT;
+        let ratio_y = SCREEN_WIDTH/SCREEN_HEIGHT;
+        let ratio_x = SCREEN_HEIGHT/SCREEN_WIDTH;
         let zoom = 1.0/1000.0;
         Self {
             simulation_name: String::new(),
+            world_size: Vec2 { x: SCREEN_WIDTH, y: SCREEN_HEIGHT },
             cam_config: CamConfig { 
                 zoom: zoom, 
-                ratio:  ratio,
+                ratio:  ratio_y,
                 target: Vec2 { x: 0.0, y: 0.0 },
                 offset: Vec2 { x: 0.0, y: 0.0 }, 
             },
             camera: Camera2D {
                 //zoom: Vec2 {x: zoom*ratio.0, y: zoom*ratio.0},
-                zoom: Vec2 {x: zoom, y: zoom*ratio},
-                target: Vec2 {x: -0.5, y: -0.5},
-                offset: Vec2 {x: -0.5, y: -0.5},
+                zoom: Vec2 {x: zoom, y: zoom*ratio_y},
+                target: Vec2 {x: 0.0, y: 0.0},
+                offset: Vec2 {x: 0.5, y: 0.5},
                 rotation: 0.0,
                 render_target: None,
                 viewport: None,
@@ -109,6 +112,11 @@ impl Simulation {
         self.agents.add_many_agents(agents_num as usize);
     }
 
+    pub fn autorun_new_sim(&mut self) {
+        self.signals.new_sim = true;
+        self.signals.new_sim_name = "Simulation".to_string();
+    }
+
     pub fn update(&mut self) {
         self.signals_check();
         self.update_sim_state();
@@ -142,9 +150,10 @@ impl Simulation {
     }
 
     pub fn draw(&self) {
-        set_camera(&self.camera);
-        //set_default_camera();
+        //set_camera(&self.camera);
+        set_default_camera();
         clear_background(BLACK);
+        self.draw_grid(50);
         for (id, agent) in self.agents.get_iter() {
             let mut draw_field_of_view: bool=false;
             if *id == self.selected {
@@ -160,6 +169,19 @@ impl Simulation {
             },
             None => {},
         };
+    }
+
+    fn draw_grid(&self, cell_size: u32) {
+        let w = self.world_size.x;
+        let h = self.world_size.y;
+        let col_num = ((w/cell_size as f32).floor() as u32);
+        let row_num = ((h/cell_size as f32).floor() as u32);
+        //draw_grid(100, 20.0, GRAY, DARKGRAY);
+        for x in 0..col_num+1 {
+            for y in 0..row_num+1 {
+                draw_circle((x*cell_size) as f32, (y*cell_size )as f32, 1.0, GRAY);
+            }
+        }
     }
 
     pub fn signals_check(&mut self) {
@@ -238,7 +260,15 @@ impl Simulation {
             if !self.ui.pointer_over {
                 self.selected = 0;
                 let (mouse_posx, mouse_posy) = mouse_position();
+                let mut offset = self.camera.offset;
+                let rel_x = mouse_posx + (offset.x*SCREEN_WIDTH);
+                let rel_y = mouse_posy + (offset.y*SCREEN_HEIGHT);
+                //let rel_x = mouse_posx/SCREEN_WIDTH;
+                //let rel_y = mouse_posy/SCREEN_HEIGHT;
                 let mouse_pos = Vec2::new(mouse_posx, mouse_posy);
+                println!("pos mouse: [{} | {}]", mouse_posx, mouse_posy);
+                println!("rel mouse: [{} | {}]", rel_x, rel_y);
+                println!("offset: [{} | {}]", offset.x, offset.y);
                 for (id, agent) in self.agents.get_iter() {
                     if contact_mouse(mouse_pos, agent.pos, agent.size) {
                         self.selected = *id;
@@ -250,9 +280,6 @@ impl Simulation {
     }
 
     fn update_sim_state(&mut self) {
-        //self.old_dt = self.dt;
-        //self.dt = get_frame_time();
-        //self.fps = get_fps();
         self.sim_state.fps = get_fps();
         self.sim_state.dt = get_frame_time();
         self.sim_state.sim_time += self.sim_state.dt as f64;

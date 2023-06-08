@@ -3,11 +3,11 @@ Live2:
         ✔ camera translation
         ✔ camera zoom in/zoom out
         ✔ new simulation naming
-        ☐ options window
-        ☐ camera control window
-        ☐ timeflow window
+        ☐ options window @low 
+        ☐ camera control window @low 
+        ☐ timeflow window @low 
         ✔ restart simulation
-        ✘ fps count control
+        ✘ fps count control 
         ✔ init rewrite code
         ✔ simulation struct: rewrite [ init() ]
         ✔ simulation struct: rewrite [ update() ]
@@ -16,8 +16,8 @@ Live2:
         ✔ simulation struct: rewrite [ collisions_mapper ]
         ✔ simulation struct: rewrite [ detection_mapper ]
         ✔ fix detection range
-        ☐ fix: select agent by mouse after camera transformations update
-        ☐ fix: initial camera parameters
+        ☐ fix: select agent by mouse after camera transformations update @high 
+        ☐ fix: initial camera parameters @low 
     0.2:
         ✘ camera viewport
         ✘ camera translation, zoom in/zoom out
