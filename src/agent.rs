@@ -7,8 +7,7 @@ use std::f32::consts::PI;
 use macroquad::{prelude::*, color}; 
 use parry2d::shape::*;
 use ::rand::{Rng, thread_rng};
-use crate::kinetic::Detection;
-use crate::kinetic::contact_circles;
+use crate::kinetic::{Detection, contact_circles};
 use crate::util::*;
 use crate::consts::*;
 use crate::timer::*;
@@ -36,7 +35,7 @@ impl Agent {
     pub fn new() -> Self {
         let s = rand::gen_range(4, 10) as f32;
         Self {
-            pos: random_position(SCREEN_WIDTH, SCREEN_HEIGHT),
+            pos: random_position(WORLD_W, WORLD_H),
             rot: random_rotation(),
             vel: rand::gen_range(0.0, 1.0)*AGENT_SPEED,
             ang_vel: 0.0,

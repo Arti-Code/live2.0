@@ -1,5 +1,7 @@
 Live2:
     0.3:
+        ☐ obstacles (rocks)
+        ✔ world_size
         ✔ camera translation
         ✔ camera zoom in/zoom out
         ✔ new simulation naming
@@ -16,8 +18,8 @@ Live2:
         ✔ simulation struct: rewrite [ collisions_mapper ]
         ✔ simulation struct: rewrite [ detection_mapper ]
         ✔ fix detection range
-        ☐ fix: select agent by mouse after camera transformations update @high 
-        ☐ fix: initial camera parameters @low 
+        ✔ fix: select agent by mouse after camera transformations update
+        ✘ fix: initial camera parameters 
     0.2:
         ✘ camera viewport
         ✘ camera translation, zoom in/zoom out

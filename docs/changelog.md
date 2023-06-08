@@ -11,7 +11,11 @@
 
 ##### v0.3
 
-- [ ] improve custom camera controll
+- [ ] source of energy on world
+- [ ] energy source agents detection
+- [ ] agents ability to consume energy source
+- [x] large world size
+- [x] improve custom camera translation controll
 - [ ] reset camera transformations
 - [ ] camera transformation info window
 - [x] camera translation

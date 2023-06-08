@@ -9,6 +9,7 @@
 
 * * *
 
+- [ ] sources of energy
 - [ ] biomes
 - [x] sensing (vision)
 - [ ] fitness function
@@ -17,7 +18,7 @@
 - [ ] species
 - [ ] generations
 - [ ] genome coding
-- [ ] camera with user control
+- [x] camera with user translation control
 - [X] collision detection
 - [ ] neural network
 - [ ] genethics algorithm
