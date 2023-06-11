@@ -6,7 +6,7 @@ use crate::{
     kinetic::*,
     agent::{Agent, AgentsBox},
 };
-
+use crate::object::ObjectType;
 
 pub struct World {
     pub size: Vec2,
@@ -64,7 +64,7 @@ impl World {
                                 let norm = contact.normal1.data.0[0];
                                 let n = Vec2::new(norm[0], norm[1]);
                                 let penetration = contact.dist;
-                                let hit: Hit=Hit{ normal: n, overlap: contact.dist };
+                                let hit: Hit=Hit{ normal: n, overlap: contact.dist, target_type: ObjectType::Agent };
                                 hits.add_collision(idx1, hit);
                             }
                         },

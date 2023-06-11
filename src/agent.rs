@@ -109,12 +109,19 @@ impl Agent {
     pub fn update_detection(&mut self, target: &Detection) {
         self.enemy.add_closer(target.distance, target.angle, target.pos.clone());
     }
+    
+    pub fn add_energy(&mut self, e: f32) {
+        self.eng += e;
+        if self.eng > self.max_eng {
+            self.eng = self.max_eng;
+        }
+    }
 }
 
 
 
 pub struct AgentsBox {
-    pub agents: HashMap<u32, Agent>
+    pub agents: HashMap<u64, Agent>
 }
 
 impl AgentsBox {
@@ -131,25 +138,25 @@ impl AgentsBox {
         }
     }
 
-    pub fn add_agent(&mut self, agent: Agent) -> u32 {
-        let key: u32 = thread_rng().gen::<u32>();
+    pub fn add_agent(&mut self, agent: Agent) -> u64 {
+        let key: u64 = thread_rng().gen::<u64>();
         self.agents.insert(key, agent);
         return key;
     }
 
-    pub fn get(&self, id: u32) -> Option<&Agent> {
+    pub fn get(&self, id: u64) -> Option<&Agent> {
         return self.agents.get(&id);
     }
 
-    pub fn remove(&mut self, id: u32) {
+    pub fn remove(&mut self, id: u64) {
         self.agents.remove(&id);
     }
 
-    pub fn get_iter(&self) -> Iter<u32, Agent> {
+    pub fn get_iter(&self) -> Iter<u64, Agent> {
         return self.agents.iter();
     }
     
-    pub fn get_iter_mut(&mut self) -> IterMut<u32, Agent> {
+    pub fn get_iter_mut(&mut self) -> IterMut<u64, Agent> {
         return self.agents.iter_mut();
     }
 

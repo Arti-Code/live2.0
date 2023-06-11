@@ -12,6 +12,7 @@ use crate::kinetic::*;
 use crate::ui::*;
 use crate::source::*;
 use crate::util::Signals;
+use crate::object::*;
 
 
 pub struct Simulation {
@@ -28,9 +29,10 @@ pub struct Simulation {
     pub sim_state: SimState,
     pub signals: Signals,
     select_phase: f32,
-    pub selected: u32,
+    pub selected: u64,
     pub mouse_state: MouseState,
     pub agents: AgentsBox,
+    pub sources: SourcesBox,
 }
 
 struct CamConfig {
@@ -56,13 +58,8 @@ impl Simulation {
                 offset: Vec2 { x: 0.5, y: 0.5 }, 
             },
             camera: Camera2D {
-                //zoom: Vec2 {x: zoom*ratio.0, y: zoom*ratio.0},
                 zoom: Vec2 {x: zoom_rate, y: zoom_rate*scr_ratio},
                 offset: Vec2 {x: -0.5, y: -0.5},
-                //target: Vec2 {x: 0.0, y: 0.0},
-                //rotation: 0.0,
-                //render_target: None,
-                //viewport: None,
                 ..Default::default()
             },
             running: false,
@@ -77,6 +74,7 @@ impl Simulation {
             select_phase: 0.0,
             mouse_state: MouseState { pos: Vec2::NAN},
             agents: AgentsBox::new(),
+            sources: SourcesBox::new(),
         }
     }
 
@@ -90,6 +88,7 @@ impl Simulation {
             },
         };
         self.agents.agents.clear();
+        self.sources.sources.clear();
         self.sim_time = 0.0;
         self.collisions_map = CollisionsMap::new();
         self.detections_map = DetectionsMap::new();
@@ -105,6 +104,7 @@ impl Simulation {
     pub fn init(&mut self) {
         let agents_num = self.config.agents_init_num;
         self.agents.add_many_agents(agents_num as usize);
+        self.sources.add_many(48);
     }
 
     pub fn autorun_new_sim(&mut self) {
@@ -112,45 +112,73 @@ impl Simulation {
         self.signals.new_sim_name = "Simulation".to_string();
     }
 
-    pub fn update(&mut self) {
-        self.signals_check();
-        self.update_sim_state();
-        self.check_agents_num();
-        self.calc_selection_time();
+    fn update_agents(&mut self) {
         self.collisions_map = self.map_collisions();
         self.detections_map = self.map_detections();
         let dt = self.sim_state.dt;
-        for (id, a) in self.agents.get_iter_mut() {
+        for (id, agent) in self.agents.get_iter_mut() {
             let uid = *id;
-            a.update(dt);
+            agent.update(dt);
             match self.collisions_map.get_collision(uid) {
                 Some(hit) => {
-                    a.update_collision(&hit.normal, hit.overlap, dt);
+                    //let t = hit.target_type;
+                    if hit.target_type == ObjectType::Source {
+                        agent.add_energy(100.0*dt);
+                        let mut source = self.sources.get(hit.target_id);
+                        //source.drain_eng(100.0*dt);
+                    }
+                    agent.update_collision(&hit.normal, hit.overlap, dt);
                 },
                 None => {
     
                 }
             }
-            a.reset_detections();
+            agent.reset_detections();
             match self.detections_map.get_detection(uid) {
                 Some(detection) => {
-                    a.update_detection(detection);
+                    agent.update_detection(detection);
                 },
                 None => {
-                    a.update_detection(&Detection::new_empty());
+                    agent.update_detection(&Detection::new_empty());
                 }
             }
         }
         self.agents.agents.retain(|_, agent| agent.alife == true);
     }
 
+    fn update_sources(&mut self) {
+        let dt = self.sim_state.dt;
+        for (id, source) in self.sources.get_iter_mut() {
+            source.update(dt)
+        }
+        self.sources.sources.retain(|_, source| source.alife == true);
+    }
+
+    pub fn update(&mut self) {
+        self.signals_check();
+        self.update_sim_state();
+        self.check_agents_num();
+        self.calc_selection_time();
+        self.update_agents();
+        self.update_sources();
+    }
+
     pub fn draw(&self) {
         set_camera(&self.camera);
-        //set_camera(&Camera2D::default());
-        //set_default_camera();
         clear_background(BLACK);
         draw_rectangle_lines(0.0, 0.0, self.world_size.x, self.world_size.y, 3.0, WHITE);
         self.draw_grid(50);
+        self.draw_agents();
+        self.draw_sources();
+    }
+
+    fn draw_sources(&self) {
+        for (id, source) in self.sources.get_iter() {
+            source.draw();
+        }
+    }
+
+    fn draw_agents(&self) {
         for (id, agent) in self.agents.get_iter() {
             let mut draw_field_of_view: bool=false;
             if *id == self.selected {
@@ -223,16 +251,16 @@ impl Simulation {
             }
         }
         if is_key_pressed(KeyCode::Kp4) {
-            self.camera.offset.x += 0.01;
+            self.camera.offset.x += 0.1;
         }
         if is_key_pressed(KeyCode::Kp6) {
-            self.camera.offset.x -= 0.01;
+            self.camera.offset.x -= 0.1;
         }
         if is_key_pressed(KeyCode::Kp8) {
-            self.camera.offset.y -= 0.01;
+            self.camera.offset.y -= 0.1;
         }
         if is_key_pressed(KeyCode::Kp2) {
-            self.camera.offset.y += 0.01;
+            self.camera.offset.y += 0.1;
         }
         if is_key_pressed(KeyCode::Left) {
             println!("target");
@@ -265,7 +293,7 @@ impl Simulation {
                 //println!("rel mouse: [{} | {}]", rel_x, rel_y);
                 //println!("offset: [{} | {}], zoom: [{} | {}], target: [{} | {}], rotation: [{}]", offset.x, offset.y, zoom.x, zoom.y, target.x, target.y, rotation);
                 let rel_coords = self.camera.screen_to_world(mouse_pos);
-                println!("SCR COORDS: [{} | {}] ==> WORLD COORDS: [{} | {}]", mouse_posx, mouse_posy, rel_coords.x, rel_coords.y);
+                //println!("SCR COORDS: [{} | {}] ==> WORLD COORDS: [{} | {}]", mouse_posx, mouse_posy, rel_coords.x, rel_coords.y);
                 for (id, agent) in self.agents.get_iter() {
                     if contact_mouse(rel_coords, agent.pos, agent.size) {
                         self.selected = *id;
@@ -283,12 +311,17 @@ impl Simulation {
         let (mouse_x, mouse_y) = mouse_position();
         self.mouse_state.pos = Vec2::new(mouse_x, mouse_y);
         self.sim_state.agents_num = self.agents.count() as i32;
+        self.sim_state.sources_num = self.sources.count() as i32;
     }
 
     fn check_agents_num(&mut self) {
         if self.sim_state.agents_num < (self.config.agent_min_num as i32) {
             let agent = Agent::new();
             self.agents.add_agent(agent);
+        }
+        if self.sim_state.sources_num < (self.config.sources_min_num as i32) {
+            let source = Source::new();
+            self.sources.add_source(source);
         }
     }
 
@@ -317,6 +350,23 @@ impl Simulation {
                     }
                 }
             }
+            for (id2, source) in self.sources.get_iter() {
+                let idx1 = *id1; let idx2 = *id2;
+                if idx1 != idx2 {
+                    let contact = contact_circles(agent1.pos, agent1.rot, agent1.vision_range, source.pos, source.rot, source.size);
+                    match contact {
+                        Some(contact) => {
+                            let rel_pos2 = source.pos - agent1.pos;
+                            let dir1 = Vec2::from_angle(agent1.rot);
+                            let ang = dir1.angle_between(rel_pos2);
+                            let dist = agent1.pos.distance(source.pos);
+                            let detection = Detection::new(dist, ang, source.pos);
+                            detections.add_detection(idx1, detection);
+                        },
+                        None => {},
+                    }
+                }
+            }
         }
         return detections;
     }
@@ -335,13 +385,30 @@ impl Simulation {
                                 let norm = contact.normal1.data.0[0];
                                 let n = Vec2::new(norm[0], norm[1]);
                                 let penetration = contact.dist;
-                                let hit: Hit=Hit{ normal: n, overlap: contact.dist };
+                                let hit: Hit=Hit{ normal: n, overlap: contact.dist, target_type: ObjectType::Agent, target_id: idx2 };
                                 hits.add_collision(idx1, hit);
                             }
                         },
                         None => {}
                     }
                 }
+            }
+            for (id2, source) in self.sources.get_iter() {
+                let idx2 = *id2;
+                let contact = contact_circles(a1.pos, a1.rot, a1.size, source.pos,source.rot, source.size);
+                    match contact {
+                        Some(contact) => {
+                            if contact.dist <= 0.0 {
+                                let p = Vec2::new(contact.point1.x, contact.point1.y);
+                                let norm = contact.normal1.data.0[0];
+                                let n = Vec2::new(norm[0], norm[1]);
+                                let penetration = contact.dist;
+                                let hit: Hit=Hit{ normal: n, overlap: contact.dist, target_type: ObjectType::Source, target_id: idx2 };
+                                hits.add_collision(*id1, hit);
+                            }
+                        },
+                        None => {}
+                    }
             }
         }
         return hits;
@@ -370,6 +437,8 @@ pub struct SimConfig {
     pub agent_speed: f32,
     pub agent_vision_range: f32,
     pub agent_rotation: f32,
+    pub sources_init_num: usize,
+    pub sources_min_num: usize,
 }
 
 impl Default for SimConfig {
@@ -380,18 +449,22 @@ impl Default for SimConfig {
             agent_speed: AGENT_SPEED,
             agent_rotation: AGENT_ROTATION,
             agent_vision_range: AGENT_VISION_RANGE,
+            sources_init_num: SOURCES_NUM,
+            sources_min_num: SOURCES_NUM_MIN,
         }
     }
 }
 
 impl SimConfig {
-    pub fn new(agents_num: usize, agents_min_num: usize, agent_speed: f32, agent_turn: f32, vision_range: f32) -> Self {
+    pub fn new(agents_num: usize, agents_min_num: usize, agent_speed: f32, agent_turn: f32, vision_range: f32, sources_num: usize, sources_min_num: usize) -> Self {
         Self {
             agents_init_num: agents_num,
             agent_min_num: agents_min_num,
             agent_speed: agent_speed,
             agent_rotation: agent_turn,
             agent_vision_range: vision_range,
+            sources_init_num: sources_num,
+            sources_min_num: sources_min_num,
         }
     }
 }
@@ -400,6 +473,7 @@ impl SimConfig {
 pub struct SimState {
     pub sim_name: String,
     pub agents_num: i32,
+    pub sources_num: i32,
     pub sim_time: f64,
     pub fps: i32,
     pub dt: f32,
@@ -410,6 +484,7 @@ impl SimState {
         Self {
             sim_name: String::new(),
             agents_num: 0,
+            sources_num: 0,
             sim_time: 0.0,
             fps: 0,
             dt: 0.0,

@@ -10,7 +10,6 @@ use macroquad::math::Vec2;
 use crate::agent::Agent;
 
 
-
 fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32> {
     let iso = Isometry2::new(Vector2::new(posx, posy), rotation);
     return iso;
@@ -112,8 +111,8 @@ pub enum DetectionTypes {
 pub struct Detection {
     pub distance: f32,
     pub angle: f32,
-    pub pos: Vec2
-    //pub target: &'a Agent,
+    pub pos: Vec2,
+    pub target_type: ObjectType,
 }
 
 impl Detection {
@@ -122,7 +121,7 @@ impl Detection {
             distance,
             angle,
             pos,
-            //target: target,
+            target_type: ObjectType::Agent,
         }
     }
     pub fn new_empty() -> Self {
@@ -130,7 +129,7 @@ impl Detection {
             distance: f32::NAN,
             angle: f32::NAN,
             pos: Vec2::NAN,
-            //target: &Agent::new(),
+            target_type: ObjectType::Empty,
         }
     }
     pub fn add_closer(&mut self, distance: f32, angle: f32, pos: Vec2) {
@@ -138,7 +137,7 @@ impl Detection {
             self.distance = distance;
             self.angle = angle;
             self.pos = pos;
-            //self.target = target;
+            self.target_type = ObjectType::Agent;
         }
     }
     pub fn is_empty(&self) -> bool {
@@ -149,15 +148,41 @@ impl Detection {
     }
 }
 
+/* pub struct Detections {
+    pub detections: HashMap<ObjectType, Detection>
+}
+
+impl Detections {
+    pub fn new_empty() -> Self {
+        Self {
+            detections: HashMap::new(),
+        }
+    }
+    pub fn add_closer(&mut self, distance: f32, angle: f32, pos: Vec2) {
+        if self.is_empty() || self.distance > distance {
+            self.distance = distance;
+            self.angle = angle;
+            self.pos = pos;
+            self.target_type = ObjectType::Agent;
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        if self.angle.is_nan() || self.distance.is_nan() {
+            return true;
+        }
+        return false;
+    }
+} */
+
 pub struct DetectionsMap {
-    pub detections: HashMap<u32, Detection>,
+    pub detections: HashMap<u64, Detection>,
 }
 
 impl DetectionsMap {
     pub fn new() -> Self {
         Self { detections: HashMap::new() }
     }
-    pub fn add_detection(&mut self, id: u32, detection: Detection) {
+    pub fn add_detection(&mut self, id: u64, detection: Detection) {
         let old_detection = self.detections.get(&id);
         let actual = match old_detection {
             Some(actual_detection) if actual_detection.distance > detection.distance => {
@@ -178,10 +203,10 @@ impl DetectionsMap {
     pub fn clear(&mut self) {
         self.detections.clear();
     }
-    pub fn remove_detection(&mut self, id: u32) {
+    pub fn remove_detection(&mut self, id: u64) {
         _ = self.detections.remove(&id);
     }
-    pub fn get_detection(&mut self, id: u32) -> Option<&Detection> {
+    pub fn get_detection(&mut self, id: u64) -> Option<&Detection> {
         return self.detections.get(&id);
     } 
 }
@@ -194,26 +219,48 @@ impl DetectionsMap {
 pub struct Hit {
     pub normal: macroquad::math::Vec2,
     pub overlap: f32,
+    pub target_type: ObjectType,
+    pub target_id: u64,
 }
 
 pub struct CollisionsMap {
-    contacts: HashMap<u32, Hit>,
+    contacts: HashMap<u64, Hit>,
 }
 
 impl CollisionsMap {
     pub fn new() -> Self {
         Self { contacts: HashMap::new() }
     }
-    pub fn add_collision(&mut self, id: u32, hit: Hit) {
+    pub fn add_collision(&mut self, id: u64, hit: Hit) {
         self.contacts.insert(id, hit);
     }
     pub fn clear(&mut self) {
         self.contacts.clear();
     }
-    pub fn remove_collision(&mut self, id: u32) {
+    pub fn remove_collision(&mut self, id: u64) {
         _ = self.contacts.remove(&id);
     }
-    pub fn get_collision(&mut self, id: u32) -> Option<&Hit> {
+    pub fn get_collision(&mut self, id: u64) -> Option<&Hit> {
         return self.contacts.get(&id);
     } 
+}
+
+pub struct Collisions {
+    collisions: Vec<Hit>,
+}
+
+pub struct CollisionsList {
+    collisions: HashMap<u32, Collisions>,
+}
+
+//      **********************************************
+//      **               OBJECT TYPE                **
+//      **********************************************
+
+#[derive(PartialEq, Eq)]
+pub enum ObjectType {
+    Empty,
+    Agent,
+    Source,
+    Obstacle,
 }
