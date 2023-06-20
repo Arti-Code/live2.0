@@ -25,6 +25,9 @@ pub struct Agent {
     pub color: color::Color,
     pub pulse: f32,
     pub shape: Ball,
+    motor: bool,
+    motor_phase: f32,
+    motor_side: bool,
     analize_timer: Timer,
     analizer: DummyNetwork,
     pub alife: bool,
@@ -34,6 +37,7 @@ pub struct Agent {
 impl Agent {
     pub fn new() -> Self {
         let s = rand::gen_range(4, 10) as f32;
+        let motor = thread_rng().gen_bool(1.0);
         Self {
             pos: random_position(WORLD_W, WORLD_H),
             rot: random_rotation(),
@@ -46,6 +50,9 @@ impl Agent {
             color: random_color(),
             pulse: rand::gen_range(0.0, 1.0),
             shape: Ball { radius: s },
+            motor: motor,
+            motor_phase: thread_rng().gen_range(0.0..1.0),
+            motor_side: true,
             analize_timer: Timer::new(0.3, true, true, true),
             analizer: DummyNetwork::new(2),
             alife: true,
@@ -60,6 +67,12 @@ impl Agent {
         let y1 = y0 + dir.y * self.size*1.0;
         let x2 = x0 + dir.x * self.size*2.0;
         let y2 = y0 + dir.y * self.size*2.0;
+        if self.motor {
+            let tail = Vec2::from_angle(self.rot+(self.motor_phase*0.2));
+            let x3 = x0 - tail.x * self.size*1.6;
+            let y3 = y0 - tail.y * self.size*1.6;
+            draw_circle_lines(x3, y3, self.size/2.0, 2.0, self.color);
+        }
         let pulse = (self.pulse * 2.0) - 1.0;
         if field_of_view && !self.enemy.is_empty() {
             let x0 = self.pos.x; let y0 = self.pos.y;
@@ -87,6 +100,19 @@ impl Agent {
         self.rot += self.ang_vel * dt;
         self.rot = self.rot % (2.0*PI);
         self.pulse = (self.pulse + dt*0.25)%1.0;
+        if self.motor {
+            if self.motor_side {
+                self.motor_phase = self.motor_phase + dt*5.0;
+                if self.motor_phase >= 1.0 {
+                    self.motor_side = false;
+                }
+            } else {
+                self.motor_phase = self.motor_phase - dt*5.0;
+                if self.motor_phase <= -1.0 {
+                    self.motor_side = true;
+                }
+            }
+        }
         let dir = Vec2::from_angle(self.rot);
         self.pos += dir * self.vel * dt;
         self.pos = wrap_around(&self.pos);

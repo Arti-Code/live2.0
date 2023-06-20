@@ -55,11 +55,11 @@ impl Simulation {
                 ratio:  scr_ratio,
                 zoom: Vec2 { x: zoom_rate, y: zoom_rate*scr_ratio }, 
                 target: Vec2 { x: 0.0, y: 0.0 },
-                offset: Vec2 { x: 0.5, y: 0.5 }, 
+                offset: Vec2 { x: -1.0, y: -1.0 }, 
             },
             camera: Camera2D {
                 zoom: Vec2 {x: zoom_rate, y: zoom_rate*scr_ratio},
-                offset: Vec2 {x: -0.5, y: -0.5},
+                offset: Vec2 {x: -1.0, y: -1.0},
                 ..Default::default()
             },
             running: false,

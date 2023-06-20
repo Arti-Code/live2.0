@@ -176,11 +176,12 @@ impl Detections {
 
 pub struct DetectionsMap {
     pub detections: HashMap<u64, Detection>,
+    pub sources: HashMap<u64, Detection>,
 }
 
 impl DetectionsMap {
     pub fn new() -> Self {
-        Self { detections: HashMap::new() }
+        Self { detections: HashMap::new(), sources: HashMap::new() }
     }
     pub fn add_detection(&mut self, id: u64, detection: Detection) {
         let old_detection = self.detections.get(&id);
