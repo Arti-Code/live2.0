@@ -9,6 +9,10 @@
 
 * * *
 
+##### v0.4
+
+- [ ] integration with rapier physics engine
+
 ##### v0.3
 
 - [ ] source of energy on world

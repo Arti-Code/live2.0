@@ -9,6 +9,7 @@
 
 * * *
 
+- [ ] rapier physics integration
 - [ ] sources of energy
 - [ ] biomes
 - [x] sensing (vision)

@@ -1,4 +1,10 @@
 Live2:
+    0.4:
+        ✔ add rapier physics world
+        ✔ add agents to physics world
+        ✔ send agents data to phisics world
+        ✔ get agents data from physics world
+        ☐ get collision events from physics world 
     0.3:
         ☐ obstacles (rocks)
         ✔ world_size
