@@ -91,12 +91,21 @@ impl Agent {
         }
     }
 
-    pub fn update2(&mut self, physics: &World) {
+    pub fn update2(&mut self, physics: &mut World) {
         match self.physics_handle {
             Some(handle) => {
                 let physics_data = physics.get_physics_data(handle);
                 self.pos = physics_data.position;
                 self.rot = physics_data.rotation;
+                match physics.rigid_bodies.get_mut(handle) {
+                    Some(body) => {
+                        let dir = Vec2::from_angle(self.rot);
+                        let v = dir*self.vel;
+                        body.set_linvel([v.x, v.y].into(), true);
+                        body.set_angvel(self.ang_vel, true);
+                    },
+                    None => {},
+                }
             },
             None => {},
         }
@@ -114,8 +123,8 @@ impl Agent {
             }
             self.ang_vel = outputs[1] * AGENT_ROTATION;
         }
-        self.rot += self.ang_vel * dt;
-        self.rot = self.rot % (2.0*PI);
+        //self.rot += self.ang_vel * dt;
+        //self.rot = self.rot % (2.0*PI);
         self.pulse = (self.pulse + dt*0.25)%1.0;
         if self.motor {
             if self.motor_side {
@@ -130,9 +139,9 @@ impl Agent {
                 }
             }
         }
-        let dir = Vec2::from_angle(self.rot);
-        self.pos += dir * self.vel * dt;
-        self.pos = wrap_around(&self.pos);
+        //let dir = Vec2::from_angle(self.rot);
+        //self.pos += dir * self.vel * dt;
+        //self.pos = wrap_around(&self.pos);
         if self.eng > 0.0 {
             self.eng -= self.size * 1.0 * dt;
         } else {

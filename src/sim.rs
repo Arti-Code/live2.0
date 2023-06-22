@@ -110,7 +110,7 @@ impl Simulation {
 
     fn update_agents(&mut self) {
         for (id, agent) in self.agents.get_iter_mut() {
-            agent.update2(&self.world);
+            agent.update2(&mut self.world);
         }
         //self.collisions_map = self.map_collisions();
         //self.detections_map = self.map_detections();

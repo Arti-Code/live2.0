@@ -27,7 +27,7 @@ impl World {
         Self {
             rigid_bodies: RigidBodySet::new(),
             colliders: ColliderSet::new(),
-            gravity: Vector2::new(0.0, -1.0),
+            gravity: Vector2::new(0.0, 0.0),
             integration_parameters: IntegrationParameters::default(),
             physics_pipeline: PhysicsPipeline::new(),
             island_manager: IslandManager::new(),
@@ -60,7 +60,7 @@ impl World {
     
     pub fn add_circle_body(&mut self, position: &Vec2, radius: f32) -> RigidBodyHandle {
         let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
-        let ball = RigidBodyBuilder::dynamic()
+        let ball = RigidBodyBuilder::kinematic_velocity_based()
             .position(iso);
         let collider = ColliderBuilder::ball(radius).build();
         let rb_handle = self.rigid_bodies.insert(ball);
