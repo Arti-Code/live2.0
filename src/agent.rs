@@ -34,7 +34,7 @@ pub struct Agent {
     analizer: DummyNetwork,
     pub alife: bool,
     enemy: Detection,
-    physics_handle: Option<RigidBodyHandle>,
+    pub physics_handle: Option<RigidBodyHandle>,
 }
 
 impl Agent {
@@ -112,7 +112,7 @@ impl Agent {
 
     }
 
-    pub fn update(&mut self, dt: f32){
+    pub fn update(&mut self, dt: f32) -> bool{
         if self.analize_timer.update(dt) {
             let outputs = self.analizer.analize();
             if outputs[0] >= 0.0 {
@@ -148,6 +148,7 @@ impl Agent {
             self.eng = 0.0;
             self.alife = false;
         }
+        return self.alife;
     }
 
     pub fn update_collision(&mut self, collision_normal: &Vec2, penetration: f32, dt: f32) {

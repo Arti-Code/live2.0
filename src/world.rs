@@ -1,3 +1,4 @@
+use crossbeam::channel::{Receiver, Sender};
 use nalgebra::{Unit, Complex, Isometry2};
 use rapier2d::{prelude::*, na::Vector2}; 
 use macroquad::prelude::*;
@@ -5,6 +6,7 @@ use std::f32::consts::PI;
 //use crate::element::*;
 use std::time::Duration;
 use std::thread::sleep;
+use crossbeam::*;
 
 pub struct World {
     pub rigid_bodies: RigidBodySet,
@@ -19,11 +21,19 @@ pub struct World {
     multibody_joint_set: MultibodyJointSet,
     ccd_solver: CCDSolver,
     physics_hooks: (),
-    event_handler: (),
+    event_handler: ChannelEventCollector,
+    //collision_send: Sender<CollisionEvent>,
+    collision_recv: Receiver<CollisionEvent>,
 }
 
 impl World {
     pub fn new() -> Self {
+        let (collision_send, collision_recv) = crossbeam::channel::unbounded();
+        let collision_send2 = collision_send.clone();
+        //let collision_recv2 = collision_recv.clone();
+        let (contact_force_send, contact_force_recv) = crossbeam::channel::unbounded();
+        let contact_force_send2 = contact_force_send.clone();
+        let event_handler = ChannelEventCollector::new(collision_send, contact_force_send);
         Self {
             rigid_bodies: RigidBodySet::new(),
             colliders: ColliderSet::new(),
@@ -37,43 +47,38 @@ impl World {
             multibody_joint_set: MultibodyJointSet::new(),
             ccd_solver: CCDSolver::new(),
             physics_hooks: (),
-            event_handler: (),
+            //collision_send: collision_send,
+            collision_recv: collision_recv,
+            event_handler: ChannelEventCollector::new(collision_send2, contact_force_send2),
         }
     }
-    
-    /* pub fn example(&mut self) {
-        let ground_collider = ColliderBuilder::cuboid(100.0, 0.1).restitution(0.7).build();
-        self.colliders.insert(ground_collider);
-        let ball = RigidBodyBuilder::dynamic()
-          .translation(vector![0.0, 10.0])
-          .build();
-        let ball_collider = ColliderBuilder::ball(0.5).restitution(0.9).build();
-        let ball_body_handle = self.rigid_bodies.insert(ball);
-        self.colliders.insert_with_parent(ball_collider, ball_body_handle, &mut self.rigid_bodies);
-        for _ in 0..200 {
-            self.step_physics();
-            let ball_body = &self.rigid_bodies[ball_body_handle];
-            println!("Ball altitude: {}",ball_body.translation().y);
-            sleep(Duration::from_secs_f32(0.3));
-        }
-    } */
     
     pub fn add_circle_body(&mut self, position: &Vec2, radius: f32) -> RigidBodyHandle {
         let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
         let ball = RigidBodyBuilder::kinematic_velocity_based()
             .position(iso);
-        let collider = ColliderBuilder::ball(radius).build();
+        let mut collider = ColliderBuilder::ball(radius).build();
+        collider.set_active_events(ActiveEvents::COLLISION_EVENTS);
         let rb_handle = self.rigid_bodies.insert(ball);
         let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
         return rb_handle;
     }
-
-    pub fn run(&mut self) {
-        self.step_physics();
-        self.draw();
-        sleep(Duration::from_secs_f32(0.3));
-    }
     
+    fn reciv_events(&self) {
+        while let Ok(collision_event) = self.collision_recv.try_recv() {
+            println!("COLLISION!");
+        }
+    }
+
+    pub fn remove_physics_object(&mut self, body_handle: RigidBodyHandle) {
+        _ = self.rigid_bodies.remove(body_handle, &mut self.island_manager, &mut self.colliders, &mut self.impulse_joint_set, &mut self.multibody_joint_set, true);
+    }
+
+    pub fn get_physics_obj_num(&self) -> usize {
+        let body_num = self.rigid_bodies.len();
+        return body_num;
+    }
+
     pub fn step_physics(&mut self) {
         self.physics_pipeline.step(
             &self.gravity,
@@ -90,33 +95,7 @@ impl World {
             &self.physics_hooks,
             &self.event_handler,
         );
-        //sleep(Duration::from_secs_f32(0.3));
-    }
-
-    pub fn draw(&self) {
-        for (_, rb) in self.rigid_bodies.iter() {
-            let isometry = rb.position();
-            if let Some(collider_handle) = rb.colliders().first() {
-                if let Some(shape) = self.colliders.get(*collider_handle) {
-                    let pos = Vec2::new(isometry.translation.x, isometry.translation.y);
-                    match shape.shape().shape_type() {
-                        ShapeType::Ball => {
-                            let r = shape.shape().as_ball().unwrap().radius;
-                            draw_circle(pos.x, pos.y, r, GREEN);
-                            println!("CIRCLE: x:{} y:{}", pos.x, pos.y)
-                        },
-                        ShapeType::Cuboid => {
-                            let hx = shape.shape().as_cuboid().unwrap().half_extents.data.0[0][0];
-                            let hy = shape.shape().as_cuboid().unwrap().half_extents.data.0[0][1];
-                            draw_rectangle(pos.x-hx, pos.y-hy, 2.0*hx, 2.0*hy, YELLOW);
-                        },
-                        _ => {},
-                    }
-                    
-                    
-                }
-            }
-        }
+        self.reciv_events();
     }
 
     fn iso_to_vec2_rot(&self, isometry: &Isometry<Real>) -> (Vec2, f32) {

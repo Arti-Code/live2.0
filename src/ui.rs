@@ -37,7 +37,7 @@ impl UISystem {
             self.pointer_over = egui_ctx.is_pointer_over_area();
             self.build_top_menu(egui_ctx, &sim_state.sim_name);
             self.build_quit_window(egui_ctx);
-            self.build_monit_window(egui_ctx, sim_state.fps, sim_state.dt, sim_state.sim_time, sim_state.agents_num);
+            self.build_monit_window(egui_ctx, sim_state.fps, sim_state.dt, sim_state.sim_time, sim_state.agents_num, sim_state.physics_num);
             self.build_mouse_window(egui_ctx);
             match agent {
                 Some(agent) => {
@@ -95,7 +95,7 @@ impl UISystem {
         });
     }
 
-    fn build_monit_window(&self, egui_ctx: &Context, fps: i32, delta: f32, time: f64, agents_num: i32) {
+    fn build_monit_window(&self, egui_ctx: &Context, fps: i32, delta: f32, time: f64, agents_num: i32, physics_num: i32) {
         if self.state.performance {
             egui::Window::new("Monitor").default_pos((5.0, 100.0))
             .default_width(125.0)
@@ -107,6 +107,8 @@ impl UISystem {
                 ui.label(format!("TIME: {}", time.round()));
                 ui.separator();
                 ui.label(format!("AGENTS: {}", agents_num));
+                ui.separator();
+                ui.label(format!("PHYSICS OBJECTS: {}", physics_num));
             });
         }    
     }

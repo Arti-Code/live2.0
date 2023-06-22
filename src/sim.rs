@@ -112,33 +112,17 @@ impl Simulation {
         for (id, agent) in self.agents.get_iter_mut() {
             agent.update2(&mut self.world);
         }
-        //self.collisions_map = self.map_collisions();
-        //self.detections_map = self.map_detections();
         let dt = self.sim_state.dt;
         for (id, agent) in self.agents.get_iter_mut() {
             let uid = *id;
-            agent.update(dt);
-            //match self.collisions_map.get_collision(uid) {
-            //    Some(hit) => {
-            //        //let t = hit.target_type;
-            //        if hit.target_type == ObjectType::Source {
-            //            agent.add_energy(100.0*dt);
-            //            //source.drain_eng(100.0*dt);
-            //        }
-            //        agent.update_collision(&hit.normal, hit.overlap, dt);
-            //    },
-            //    None => {
-            //    }
-            //}
-            //agent.reset_detections();
-            //match self.detections_map.get_detection(uid) {
-            //    Some(detection) => {
-            //        agent.update_detection(detection);
-            //    },
-            //    None => {
-            //        agent.update_detection(&Detection::new_empty());
-            //    }
-            //}
+            if !agent.update(dt) {
+                match agent.physics_handle {
+                    Some(handle) => {
+                        self.world.remove_physics_object(handle);
+                    },
+                    None => {},
+                }
+            };
         }
         self.agents.agents.retain(|_, agent| agent.alife == true);
     }
@@ -293,6 +277,7 @@ impl Simulation {
         let (mouse_x, mouse_y) = mouse_position();
         self.mouse_state.pos = Vec2::new(mouse_x, mouse_y);
         self.sim_state.agents_num = self.agents.count() as i32;
+        self.sim_state.physics_num = self.world.get_physics_obj_num() as i32;
     }
 
     fn check_agents_num(&mut self) {
@@ -420,6 +405,7 @@ pub struct SimState {
     pub sim_name: String,
     pub agents_num: i32,
     pub sources_num: i32,
+    pub physics_num: i32,
     pub sim_time: f64,
     pub fps: i32,
     pub dt: f32,
@@ -431,6 +417,7 @@ impl SimState {
             sim_name: String::new(),
             agents_num: 0,
             sources_num: 0,
+            physics_num: 0,
             sim_time: 0.0,
             fps: 0,
             dt: 0.0,
