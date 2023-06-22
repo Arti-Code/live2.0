@@ -7,11 +7,13 @@ use std::f32::consts::PI;
 use macroquad::{prelude::*, color}; 
 use parry2d::shape::*;
 use ::rand::{Rng, thread_rng};
+use rapier2d::prelude::RigidBodyHandle;
 use crate::kinetic::{Detection, contact_circles};
 use crate::util::*;
 use crate::consts::*;
 use crate::timer::*;
 use crate::neuro::*;
+use crate::world::*;
 
 pub struct Agent {
     pub pos: Vec2,
@@ -32,6 +34,7 @@ pub struct Agent {
     analizer: DummyNetwork,
     pub alife: bool,
     enemy: Detection,
+    physics_handle: Option<RigidBodyHandle>,
 }
 
 impl Agent {
@@ -57,6 +60,7 @@ impl Agent {
             analizer: DummyNetwork::new(2),
             alife: true,
             enemy: Detection::new_empty(),
+            physics_handle: None,
         }
     }
     pub fn draw(&self, field_of_view: bool) {
@@ -86,6 +90,19 @@ impl Agent {
             draw_circle_lines(x0, y0, self.vision_range, 0.75, GRAY);
         }
     }
+
+    pub fn update2(&mut self, physics: &World) {
+        match self.physics_handle {
+            Some(handle) => {
+                let physics_data = physics.get_physics_data(handle);
+                self.pos = physics_data.position;
+                self.rot = physics_data.rotation;
+            },
+            None => {},
+        }
+
+    }
+
     pub fn update(&mut self, dt: f32){
         if self.analize_timer.update(dt) {
             let outputs = self.analizer.analize();
@@ -157,15 +174,17 @@ impl AgentsBox {
         }
     }
 
-    pub fn add_many_agents(&mut self, agents_num: usize) {
+    pub fn add_many_agents(&mut self, agents_num: usize, physics_world: &mut World) {
         for _ in 0..agents_num {
             let agent = Agent::new();
-            _ = self.add_agent(agent);
+            _ = self.add_agent(agent, physics_world);
         }
     }
 
-    pub fn add_agent(&mut self, agent: Agent) -> u64 {
+    pub fn add_agent(&mut self, mut agent: Agent, physics_world: &mut World) -> u64 {
         let key: u64 = thread_rng().gen::<u64>();
+        let handle = physics_world.add_circle_body(&agent.pos, agent.size);
+        agent.physics_handle = Some(handle);
         self.agents.insert(key, agent);
         return key;
     }

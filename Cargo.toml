@@ -1,6 +1,6 @@
 [package]
 name = "live2"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 authors = ["Artur Gwoździowski <gwozdyk@gmain.com>"]
 keywords = ["neuroevolution", "genethics algorithm", "artificial inteligence", "simulation"]
@@ -10,6 +10,7 @@ keywords = ["neuroevolution", "genethics algorithm", "artificial inteligence", "
 [dependencies]
 macroquad = "0.3.25"
 parry2d = "0.13.4"
+rapier2d = { version = "0.17.2", features = [ "simd-stable" ] }
 nalgebra = { version = "0.32.2", features = ["convert-glam020"] }
 glam = "0.24.0"
 egui-macroquad = "0.15.0"

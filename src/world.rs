@@ -1,79 +1,141 @@
-use std::collections::{HashMap, hash_map::{Iter, IterMut}};
-use ::rand::{Rng, thread_rng};
+use nalgebra::{Unit, Complex, Isometry2};
+use rapier2d::{prelude::*, na::Vector2}; 
 use macroquad::prelude::*;
-use crate::{
-    prelude::*, 
-    kinetic::*,
-    agent::{Agent, AgentsBox},
-};
-use crate::object::ObjectType;
+use std::f32::consts::PI;
+//use crate::element::*;
+use std::time::Duration;
+use std::thread::sleep;
 
 pub struct World {
-    pub size: Vec2,
-    pub agents: AgentsBox,
-    pub hit_map: CollisionsMap,
-
+    pub rigid_bodies: RigidBodySet,
+    pub colliders: ColliderSet,
+    gravity: Vector2<f32>,
+    integration_parameters: IntegrationParameters,
+    physics_pipeline: PhysicsPipeline,
+    island_manager: IslandManager,
+    broad_phase: BroadPhase,
+    narrow_phase: NarrowPhase,
+    impulse_joint_set: ImpulseJointSet,
+    multibody_joint_set: MultibodyJointSet,
+    ccd_solver: CCDSolver,
+    physics_hooks: (),
+    event_handler: (),
 }
 
 impl World {
-
-    pub fn new(world_size: Vec2, agents_num: usize) -> Self {
-        let mut agents = AgentsBox::new();
-        for _ in 0..agents_num {
-            let agent = Agent::new();
-            agents.add_agent(agent);
-        }
+    pub fn new() -> Self {
         Self {
-            size: world_size,
-            agents: agents,
-            hit_map: CollisionsMap::new(),
+            rigid_bodies: RigidBodySet::new(),
+            colliders: ColliderSet::new(),
+            gravity: Vector2::new(0.0, -1.0),
+            integration_parameters: IntegrationParameters::default(),
+            physics_pipeline: PhysicsPipeline::new(),
+            island_manager: IslandManager::new(),
+            broad_phase: BroadPhase::new(),
+            narrow_phase: NarrowPhase::new(),
+            impulse_joint_set: ImpulseJointSet::new(),
+            multibody_joint_set: MultibodyJointSet::new(),
+            ccd_solver: CCDSolver::new(),
+            physics_hooks: (),
+            event_handler: (),
         }
     }
-
-    pub fn update(&mut self, dt: f32) {
-        self.hit_map = self.map_collisions();
-        for (unique, agent) in self.agents.get_iter_mut() {
-            agent.update(dt);
-            match self.hit_map.get_collision(*unique) {
-                Some(hit) => {
-                    agent.update_collision(&hit.normal, hit.overlap, dt);
-                },
-                None => {
-                }
-            }
+    
+    /* pub fn example(&mut self) {
+        let ground_collider = ColliderBuilder::cuboid(100.0, 0.1).restitution(0.7).build();
+        self.colliders.insert(ground_collider);
+        let ball = RigidBodyBuilder::dynamic()
+          .translation(vector![0.0, 10.0])
+          .build();
+        let ball_collider = ColliderBuilder::ball(0.5).restitution(0.9).build();
+        let ball_body_handle = self.rigid_bodies.insert(ball);
+        self.colliders.insert_with_parent(ball_collider, ball_body_handle, &mut self.rigid_bodies);
+        for _ in 0..200 {
+            self.step_physics();
+            let ball_body = &self.rigid_bodies[ball_body_handle];
+            println!("Ball altitude: {}",ball_body.translation().y);
+            sleep(Duration::from_secs_f32(0.3));
         }
+    } */
+    
+    pub fn add_circle_body(&mut self, position: &Vec2, radius: f32) -> RigidBodyHandle {
+        let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
+        let ball = RigidBodyBuilder::dynamic()
+            .position(iso);
+        let collider = ColliderBuilder::ball(radius).build();
+        let rb_handle = self.rigid_bodies.insert(ball);
+        let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
+        return rb_handle;
     }
 
-    pub fn draw(&mut self, dt: f32) {
-        for (id, agent) in self.agents.get_iter() {
-            agent.draw(false);
-        }
+    pub fn run(&mut self) {
+        self.step_physics();
+        self.draw();
+        sleep(Duration::from_secs_f32(0.3));
+    }
+    
+    pub fn step_physics(&mut self) {
+        self.physics_pipeline.step(
+            &self.gravity,
+            &self.integration_parameters,
+            &mut self.island_manager,
+            &mut self.broad_phase,
+            &mut self.narrow_phase,
+            &mut self.rigid_bodies,
+            &mut self.colliders,
+            &mut self.impulse_joint_set,
+            &mut self.multibody_joint_set,
+            &mut self.ccd_solver,
+            None,
+            &self.physics_hooks,
+            &self.event_handler,
+        );
+        //sleep(Duration::from_secs_f32(0.3));
     }
 
-    fn map_collisions(&self) -> CollisionsMap {
-        let mut hits: CollisionsMap = CollisionsMap::new();
-        for (id1, a1) in self.agents.get_iter() {
-            for (id2, a2) in self.agents.get_iter() {
-                let idx1 = *id1; let idx2 = *id2;
-                if idx1 != idx2 {
-                    let contact = contact_circles(a1.pos, a1.rot, a1.size, a2.pos,a2.rot, a2.size);
-                    match contact {
-                        Some(contact) => {
-                            if contact.dist <= 0.0 {
-                                let p = Vec2::new(contact.point1.x, contact.point1.y);
-                                let norm = contact.normal1.data.0[0];
-                                let n = Vec2::new(norm[0], norm[1]);
-                                let penetration = contact.dist;
-                                let hit: Hit=Hit{ normal: n, overlap: contact.dist, target_type: ObjectType::Agent };
-                                hits.add_collision(idx1, hit);
-                            }
+    pub fn draw(&self) {
+        for (_, rb) in self.rigid_bodies.iter() {
+            let isometry = rb.position();
+            if let Some(collider_handle) = rb.colliders().first() {
+                if let Some(shape) = self.colliders.get(*collider_handle) {
+                    let pos = Vec2::new(isometry.translation.x, isometry.translation.y);
+                    match shape.shape().shape_type() {
+                        ShapeType::Ball => {
+                            let r = shape.shape().as_ball().unwrap().radius;
+                            draw_circle(pos.x, pos.y, r, GREEN);
+                            println!("CIRCLE: x:{} y:{}", pos.x, pos.y)
                         },
-                        None => {}
+                        ShapeType::Cuboid => {
+                            let hx = shape.shape().as_cuboid().unwrap().half_extents.data.0[0][0];
+                            let hy = shape.shape().as_cuboid().unwrap().half_extents.data.0[0][1];
+                            draw_rectangle(pos.x-hx, pos.y-hy, 2.0*hx, 2.0*hy, YELLOW);
+                        },
+                        _ => {},
                     }
+                    
+                    
                 }
             }
         }
-        return hits;
     }
 
+    fn iso_to_vec2_rot(&self, isometry: &Isometry<Real>) -> (Vec2, f32) {
+        let pos = Vec2::new(isometry.translation.x, isometry.translation.y);
+        let rot = isometry.rotation.angle()+PI;
+        return (pos, rot);
+    }
+
+    pub fn get_physics_data(&self, handle: RigidBodyHandle) -> PhysicsData {
+        let rb = self.rigid_bodies.get(handle).expect("handle to non-existent rigid body");
+        let iso = rb.position();
+        let (pos, rot) = self.iso_to_vec2_rot(iso);
+        let data = PhysicsData {position: pos, rotation: rot};
+        return data;
+    }
+}
+
+
+pub struct PhysicsData {
+    pub position: Vec2,
+    pub rotation: f32,
 }

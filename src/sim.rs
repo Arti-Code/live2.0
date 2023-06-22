@@ -13,13 +13,15 @@ use crate::ui::*;
 use crate::source::*;
 use crate::util::Signals;
 use crate::object::*;
+use crate::world::*;
 
 
 pub struct Simulation {
     pub simulation_name: String,
     pub world_size: Vec2,
+    pub world: World,
+    zoom_rate: f32,
     pub camera: Camera2D,
-    cam_config: CamConfig,
     pub running: bool,
     pub sim_time: f64,
     config: SimConfig,
@@ -32,7 +34,6 @@ pub struct Simulation {
     pub selected: u64,
     pub mouse_state: MouseState,
     pub agents: AgentsBox,
-    pub sources: SourcesBox,
 }
 
 struct CamConfig {
@@ -50,13 +51,8 @@ impl Simulation {
         Self {
             simulation_name: String::new(),
             world_size: Vec2 { x: WORLD_W, y: WORLD_H },
-            cam_config: CamConfig { 
-                zoom_rate: zoom_rate,
-                ratio:  scr_ratio,
-                zoom: Vec2 { x: zoom_rate, y: zoom_rate*scr_ratio }, 
-                target: Vec2 { x: 0.0, y: 0.0 },
-                offset: Vec2 { x: -1.0, y: -1.0 }, 
-            },
+            world: World::new(),
+            zoom_rate: scr_ratio,
             camera: Camera2D {
                 zoom: Vec2 {x: zoom_rate, y: zoom_rate*scr_ratio},
                 offset: Vec2 {x: -1.0, y: -1.0},
@@ -74,7 +70,7 @@ impl Simulation {
             select_phase: 0.0,
             mouse_state: MouseState { pos: Vec2::NAN},
             agents: AgentsBox::new(),
-            sources: SourcesBox::new(),
+            //sources: SourcesBox::new(),
         }
     }
 
@@ -87,8 +83,8 @@ impl Simulation {
                 String::new()
             },
         };
+        self.world = World::new();
         self.agents.agents.clear();
-        self.sources.sources.clear();
         self.sim_time = 0.0;
         self.collisions_map = CollisionsMap::new();
         self.detections_map = DetectionsMap::new();
@@ -103,8 +99,8 @@ impl Simulation {
 
     pub fn init(&mut self) {
         let agents_num = self.config.agents_init_num;
-        self.agents.add_many_agents(agents_num as usize);
-        self.sources.add_many(48);
+        self.agents.add_many_agents(agents_num as usize, &mut self.world);
+        //self.sources.add_many(48);
     }
 
     pub fn autorun_new_sim(&mut self) {
@@ -113,45 +109,38 @@ impl Simulation {
     }
 
     fn update_agents(&mut self) {
-        self.collisions_map = self.map_collisions();
-        self.detections_map = self.map_detections();
+        for (id, agent) in self.agents.get_iter_mut() {
+            agent.update2(&self.world);
+        }
+        //self.collisions_map = self.map_collisions();
+        //self.detections_map = self.map_detections();
         let dt = self.sim_state.dt;
         for (id, agent) in self.agents.get_iter_mut() {
             let uid = *id;
             agent.update(dt);
-            match self.collisions_map.get_collision(uid) {
-                Some(hit) => {
-                    //let t = hit.target_type;
-                    if hit.target_type == ObjectType::Source {
-                        agent.add_energy(100.0*dt);
-                        let mut source = self.sources.get(hit.target_id);
-                        //source.drain_eng(100.0*dt);
-                    }
-                    agent.update_collision(&hit.normal, hit.overlap, dt);
-                },
-                None => {
-    
-                }
-            }
-            agent.reset_detections();
-            match self.detections_map.get_detection(uid) {
-                Some(detection) => {
-                    agent.update_detection(detection);
-                },
-                None => {
-                    agent.update_detection(&Detection::new_empty());
-                }
-            }
+            //match self.collisions_map.get_collision(uid) {
+            //    Some(hit) => {
+            //        //let t = hit.target_type;
+            //        if hit.target_type == ObjectType::Source {
+            //            agent.add_energy(100.0*dt);
+            //            //source.drain_eng(100.0*dt);
+            //        }
+            //        agent.update_collision(&hit.normal, hit.overlap, dt);
+            //    },
+            //    None => {
+            //    }
+            //}
+            //agent.reset_detections();
+            //match self.detections_map.get_detection(uid) {
+            //    Some(detection) => {
+            //        agent.update_detection(detection);
+            //    },
+            //    None => {
+            //        agent.update_detection(&Detection::new_empty());
+            //    }
+            //}
         }
         self.agents.agents.retain(|_, agent| agent.alife == true);
-    }
-
-    fn update_sources(&mut self) {
-        let dt = self.sim_state.dt;
-        for (id, source) in self.sources.get_iter_mut() {
-            source.update(dt)
-        }
-        self.sources.sources.retain(|_, source| source.alife == true);
     }
 
     pub fn update(&mut self) {
@@ -160,7 +149,7 @@ impl Simulation {
         self.check_agents_num();
         self.calc_selection_time();
         self.update_agents();
-        self.update_sources();
+        self.world.step_physics();
     }
 
     pub fn draw(&self) {
@@ -169,13 +158,6 @@ impl Simulation {
         draw_rectangle_lines(0.0, 0.0, self.world_size.x, self.world_size.y, 3.0, WHITE);
         self.draw_grid(50);
         self.draw_agents();
-        self.draw_sources();
-    }
-
-    fn draw_sources(&self) {
-        for (id, source) in self.sources.get_iter() {
-            source.draw();
-        }
     }
 
     fn draw_agents(&self) {
@@ -212,7 +194,7 @@ impl Simulation {
     pub fn signals_check(&mut self) {
         if self.signals.spawn_agent {
             let agent = Agent::new();
-            self.agents.add_agent(agent);
+            self.agents.add_agent(agent, &mut self.world);
             self.signals.spawn_agent = false;
         }
         if self.signals.new_sim {
@@ -241,13 +223,13 @@ impl Simulation {
 
     fn keys_input(&mut self) {
         if is_key_pressed(KeyCode::KpAdd) {
-            let ratio = self.cam_config.ratio;
-            self.camera.zoom += Vec2::new(0.0001, 0.0001*ratio);
+            //let ratio = self.cam_config.ratio;
+            //self.camera.zoom += Vec2::new(0.0001, 0.0001*ratio);
         }
         if is_key_pressed(KeyCode::KpSubtract) {
             if self.camera.zoom.x > 0.0001 {
-                let ratio = self.cam_config.ratio;
-                self.camera.zoom -= Vec2::new(0.0001, 0.0001*ratio);
+                //let ratio = self.cam_config.ratio;
+                //self.camera.zoom -= Vec2::new(0.0001, 0.0001*ratio);
             }
         }
         if is_key_pressed(KeyCode::Kp4) {
@@ -311,17 +293,15 @@ impl Simulation {
         let (mouse_x, mouse_y) = mouse_position();
         self.mouse_state.pos = Vec2::new(mouse_x, mouse_y);
         self.sim_state.agents_num = self.agents.count() as i32;
-        self.sim_state.sources_num = self.sources.count() as i32;
     }
 
     fn check_agents_num(&mut self) {
         if self.sim_state.agents_num < (self.config.agent_min_num as i32) {
             let agent = Agent::new();
-            self.agents.add_agent(agent);
+            self.agents.add_agent(agent, &mut self.world);
         }
         if self.sim_state.sources_num < (self.config.sources_min_num as i32) {
             let source = Source::new();
-            self.sources.add_source(source);
         }
     }
 
@@ -344,23 +324,6 @@ impl Simulation {
                             let ang = dir1.angle_between(rel_pos2);
                             let dist = agent1.pos.distance(agent2.pos);
                             let detection = Detection::new(dist, ang, agent2.pos);
-                            detections.add_detection(idx1, detection);
-                        },
-                        None => {},
-                    }
-                }
-            }
-            for (id2, source) in self.sources.get_iter() {
-                let idx1 = *id1; let idx2 = *id2;
-                if idx1 != idx2 {
-                    let contact = contact_circles(agent1.pos, agent1.rot, agent1.vision_range, source.pos, source.rot, source.size);
-                    match contact {
-                        Some(contact) => {
-                            let rel_pos2 = source.pos - agent1.pos;
-                            let dir1 = Vec2::from_angle(agent1.rot);
-                            let ang = dir1.angle_between(rel_pos2);
-                            let dist = agent1.pos.distance(source.pos);
-                            let detection = Detection::new(dist, ang, source.pos);
                             detections.add_detection(idx1, detection);
                         },
                         None => {},
@@ -392,23 +355,6 @@ impl Simulation {
                         None => {}
                     }
                 }
-            }
-            for (id2, source) in self.sources.get_iter() {
-                let idx2 = *id2;
-                let contact = contact_circles(a1.pos, a1.rot, a1.size, source.pos,source.rot, source.size);
-                    match contact {
-                        Some(contact) => {
-                            if contact.dist <= 0.0 {
-                                let p = Vec2::new(contact.point1.x, contact.point1.y);
-                                let norm = contact.normal1.data.0[0];
-                                let n = Vec2::new(norm[0], norm[1]);
-                                let penetration = contact.dist;
-                                let hit: Hit=Hit{ normal: n, overlap: contact.dist, target_type: ObjectType::Source, target_id: idx2 };
-                                hits.add_collision(*id1, hit);
-                            }
-                        },
-                        None => {}
-                    }
             }
         }
         return hits;

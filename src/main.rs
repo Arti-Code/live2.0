@@ -11,7 +11,7 @@ mod ui;
 mod neuro;
 mod progress_bar;
 mod prelude;
-//mod world;
+mod world;
 mod source;
 mod object;
 
