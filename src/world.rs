@@ -48,8 +48,9 @@ impl World {
             ccd_solver: CCDSolver::new(),
             physics_hooks: (),
             //collision_send: collision_send,
+            event_handler: event_handler,
+            //event_handler: ChannelEventCollector::new(collision_send2, contact_force_send2),
             collision_recv: collision_recv,
-            event_handler: ChannelEventCollector::new(collision_send2, contact_force_send2),
         }
     }
     
@@ -57,8 +58,11 @@ impl World {
         let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
         let ball = RigidBodyBuilder::kinematic_velocity_based()
             .position(iso);
-        let mut collider = ColliderBuilder::ball(radius).build();
-        collider.set_active_events(ActiveEvents::COLLISION_EVENTS);
+        let mut collider = ColliderBuilder::ball(radius)
+            .active_collision_types(ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC)
+            .active_events(ActiveEvents::COLLISION_EVENTS)
+            .build();
+        //collider.set_active_events(ActiveEvents::COLLISION_EVENTS);
         let rb_handle = self.rigid_bodies.insert(ball);
         let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
         return rb_handle;

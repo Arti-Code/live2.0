@@ -39,7 +39,7 @@ pub struct Agent {
 
 impl Agent {
     pub fn new() -> Self {
-        let s = rand::gen_range(4, 10) as f32;
+        let s = rand::gen_range(16, 32) as f32;
         let motor = thread_rng().gen_bool(1.0);
         Self {
             pos: random_position(WORLD_W, WORLD_H),
