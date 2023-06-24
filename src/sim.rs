@@ -137,8 +137,8 @@ impl Simulation {
     }
 
     pub fn draw(&self) {
-        set_default_camera();
-        //set_camera(&self.camera);
+        //set_default_camera();
+        set_camera(&self.camera);
         clear_background(BLACK);
         draw_rectangle_lines(0.0, 0.0, self.world_size.x, self.world_size.y, 3.0, WHITE);
         self.draw_grid(50);
