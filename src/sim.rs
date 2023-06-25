@@ -21,12 +21,11 @@ pub struct Simulation {
     pub world_size: Vec2,
     pub world: World,
     zoom_rate: f32,
+    scr_ratio: f32,
     pub camera: Camera2D,
     pub running: bool,
     pub sim_time: f64,
     config: SimConfig,
-    pub collisions_map: CollisionsMap,
-    pub detections_map: DetectionsMap,
     pub ui: UISystem,
     pub sim_state: SimState,
     pub signals: Signals,
@@ -52,17 +51,16 @@ impl Simulation {
             simulation_name: String::new(),
             world_size: Vec2 { x: WORLD_W, y: WORLD_H },
             world: World::new(),
-            zoom_rate: scr_ratio,
+            zoom_rate: zoom_rate,
+            scr_ratio: scr_ratio,
             camera: Camera2D {
                 zoom: Vec2 {x: zoom_rate, y: zoom_rate*scr_ratio},
-                offset: Vec2 {x: -1.0, y: -1.0},
+                offset: Vec2 {x: -0.5, y: -0.5},
                 ..Default::default()
             },
             running: false,
             sim_time: 0.0,    
             config: configuration,
-            collisions_map: CollisionsMap::new(),
-            detections_map: DetectionsMap::new(),
             ui: UISystem::new(),
             sim_state: SimState::new(),
             signals: Signals::new(),
@@ -86,8 +84,6 @@ impl Simulation {
         self.world = World::new();
         self.agents.agents.clear();
         self.sim_time = 0.0;
-        self.collisions_map = CollisionsMap::new();
-        self.detections_map = DetectionsMap::new();
         self.sim_state = SimState::new();
         self.sim_state.sim_name = String::from(&self.simulation_name);
         self.signals = Signals::new();
@@ -98,8 +94,9 @@ impl Simulation {
     }
 
     pub fn init(&mut self) {
+        self.world.build();
         let agents_num = self.config.agents_init_num;
-        self.agents.add_many_agents(agents_num as usize, &mut self.world);
+        self.agents.add_many_agents(1024, &mut self.world);
         //self.sources.add_many(48);
     }
 
@@ -113,18 +110,6 @@ impl Simulation {
             agent.update2(&mut self.world);
         }
         let dt = self.sim_state.dt;
-        for (id, agent) in self.agents.get_iter_mut() {
-            let uid = *id;
-            if !agent.update(dt) {
-                match agent.physics_handle {
-                    Some(handle) => {
-                        self.world.remove_physics_object(handle);
-                    },
-                    None => {},
-                }
-            };
-        }
-        self.agents.agents.retain(|_, agent| agent.alife == true);
     }
 
     pub fn update(&mut self) {
@@ -147,11 +132,7 @@ impl Simulation {
 
     fn draw_agents(&self) {
         for (id, agent) in self.agents.get_iter() {
-            let mut draw_field_of_view: bool=false;
-            if *id == self.selected {
-                draw_field_of_view = true;
-            };
-            agent.draw(draw_field_of_view);
+            agent.draw();
         }
         match self.agents.get(self.selected) {
             Some(selected_agent) => {
@@ -178,7 +159,7 @@ impl Simulation {
 
     pub fn signals_check(&mut self) {
         if self.signals.spawn_agent {
-            let agent = Agent::new();
+            let agent = Molecule::new();
             self.agents.add_agent(agent, &mut self.world);
             self.signals.spawn_agent = false;
         }
@@ -190,7 +171,7 @@ impl Simulation {
         }
     }
 
-    fn get_selected(&self) -> Option<&Agent> {
+    fn get_selected(&self) -> Option<&Molecule> {
         match self.agents.get(self.selected) {
             Some(selected_agent) => {
                 return Some(selected_agent);
@@ -208,13 +189,13 @@ impl Simulation {
 
     fn keys_input(&mut self) {
         if is_key_pressed(KeyCode::KpAdd) {
-            //let ratio = self.cam_config.ratio;
-            //self.camera.zoom += Vec2::new(0.0001, 0.0001*ratio);
+            let ratio = self.scr_ratio;
+            self.camera.zoom += Vec2::new(0.0001, 0.0001*ratio);
         }
         if is_key_pressed(KeyCode::KpSubtract) {
             if self.camera.zoom.x > 0.0001 {
-                //let ratio = self.cam_config.ratio;
-                //self.camera.zoom -= Vec2::new(0.0001, 0.0001*ratio);
+                let ratio = self.scr_ratio;
+                self.camera.zoom -= Vec2::new(0.0001, 0.0001*ratio);
             }
         }
         if is_key_pressed(KeyCode::Kp4) {
@@ -283,7 +264,7 @@ impl Simulation {
 
     fn check_agents_num(&mut self) {
         if self.sim_state.agents_num < (self.config.agent_min_num as i32) {
-            let agent = Agent::new();
+            let agent = Molecule::new();
             self.agents.add_agent(agent, &mut self.world);
         }
         if self.sim_state.sources_num < (self.config.sources_min_num as i32) {
@@ -294,56 +275,6 @@ impl Simulation {
     fn calc_selection_time(&mut self) {
         self.select_phase += self.sim_state.dt*4.0;
         self.select_phase = self.select_phase%(2.0*PI as f32);
-    }
-
-    fn map_detections(&self) -> DetectionsMap {
-        let mut detections = DetectionsMap::new();
-        for (id1, agent1) in self.agents.get_iter() {
-            for (id2, agent2) in self.agents.get_iter() {
-                let idx1 = *id1; let idx2 = *id2;
-                if idx1 != idx2 {
-                    let contact = contact_circles(agent1.pos, agent1.rot, agent1.vision_range, agent2.pos, agent2.rot, agent2.size);
-                    match contact {
-                        Some(contact) => {
-                            let rel_pos2 = agent2.pos - agent1.pos;
-                            let dir1 = Vec2::from_angle(agent1.rot);
-                            let ang = dir1.angle_between(rel_pos2);
-                            let dist = agent1.pos.distance(agent2.pos);
-                            let detection = Detection::new(dist, ang, agent2.pos);
-                            detections.add_detection(idx1, detection);
-                        },
-                        None => {},
-                    }
-                }
-            }
-        }
-        return detections;
-    }
-    
-    fn map_collisions(&self) -> CollisionsMap {
-        let mut hits: CollisionsMap = CollisionsMap::new();
-        for (id1, a1) in self.agents.get_iter() {
-            for (id2, a2) in self.agents.get_iter() {
-                let idx1 = *id1; let idx2 = *id2;
-                if idx1 != idx2 {
-                    let contact = contact_circles(a1.pos, a1.rot, a1.size, a2.pos,a2.rot, a2.size);
-                    match contact {
-                        Some(contact) => {
-                            if contact.dist <= 0.0 {
-                                let p = Vec2::new(contact.point1.x, contact.point1.y);
-                                let norm = contact.normal1.data.0[0];
-                                let n = Vec2::new(norm[0], norm[1]);
-                                let penetration = contact.dist;
-                                let hit: Hit=Hit{ normal: n, overlap: contact.dist, target_type: ObjectType::Agent, target_id: idx2 };
-                                hits.add_collision(idx1, hit);
-                            }
-                        },
-                        None => {}
-                    }
-                }
-            }
-        }
-        return hits;
     }
 
     pub fn process_ui(&mut self) {

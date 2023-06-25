@@ -9,7 +9,7 @@ use egui_extras::image::RetainedImage;
 use image::open;
 use macroquad::ui::StyleBuilder;
 
-use crate::agent::Agent;
+use crate::agent::Molecule;
 use crate::consts::{SCREEN_WIDTH, SCREEN_HEIGHT};
 use crate::{progress_bar::*, Signals};
 use crate::sim::*;
@@ -32,7 +32,7 @@ impl UISystem {
         }
     }
     
-    pub fn ui_process(&mut self, sim_state: &SimState, agent: Option<&Agent>, signals: &mut Signals) {
+    pub fn ui_process(&mut self, sim_state: &SimState, agent: Option<&Molecule>, signals: &mut Signals) {
         egui_macroquad::ui(|egui_ctx| {
             self.pointer_over = egui_ctx.is_pointer_over_area();
             self.build_top_menu(egui_ctx, &sim_state.sim_name);
@@ -113,7 +113,7 @@ impl UISystem {
         }    
     }
 
-    fn build_inspect_window(&self, egui_ctx: &Context, agent: &Agent) {
+    fn build_inspect_window(&self, egui_ctx: &Context, agent: &Molecule) {
         if self.state.inspect {
             let rot = agent.rot;
             let size = agent.size;
@@ -122,9 +122,6 @@ impl UISystem {
             .show(egui_ctx, |ui| {
                 ui.label(format!("ROTATION: {}", ((rot*10.0).round())/10.0));
                 ui.label(format!("SIZE: {}", size));
-                ui.label(format!("ENERGY: {}/{}", agent.eng.round(), agent.max_eng.round()));
-                let eng_prog = agent.eng / agent.max_eng;
-                ui.add(ProgressBar::new(eng_prog).desired_width(100.0).fill(Color32::BLUE).show_percentage());
             });
         }    
     }
