@@ -1,11 +1,11 @@
 use crossbeam::channel::{Receiver, Sender};
-use nalgebra::{Unit, Complex, Isometry2};
-use rapier2d::{prelude::*, na::Vector2}; 
-use macroquad::prelude::*;
-use std::f32::consts::PI;
-use std::time::Duration;
-use std::thread::sleep;
 use crossbeam::*;
+use macroquad::prelude::*;
+use nalgebra::{Complex, Isometry2, Unit};
+use rapier2d::{na::Vector2, prelude::*};
+use std::f32::consts::PI;
+use std::thread::sleep;
+use std::time::Duration;
 
 pub struct World {
     pub rigid_bodies: RigidBodySet,
@@ -52,21 +52,24 @@ impl World {
             collision_recv: collision_recv,
         }
     }
-    
+
     pub fn add_circle_body(&mut self, position: &Vec2, radius: f32) -> RigidBodyHandle {
         let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
-        let ball = RigidBodyBuilder::kinematic_velocity_based()
-            .position(iso);
+        let ball = RigidBodyBuilder::kinematic_velocity_based().position(iso);
         let mut collider = ColliderBuilder::ball(radius)
-            .active_collision_types(ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC)
+            .active_collision_types(
+                ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+            )
             .active_events(ActiveEvents::COLLISION_EVENTS)
             .build();
         //collider.set_active_events(ActiveEvents::COLLISION_EVENTS);
         let rb_handle = self.rigid_bodies.insert(ball);
-        let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
+        let coll_handle =
+            self.colliders
+                .insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
         return rb_handle;
     }
-    
+
     fn reciv_events(&self) {
         while let Ok(collision_event) = self.collision_recv.try_recv() {
             println!("COLLISION!");
@@ -74,7 +77,14 @@ impl World {
     }
 
     pub fn remove_physics_object(&mut self, body_handle: RigidBodyHandle) {
-        _ = self.rigid_bodies.remove(body_handle, &mut self.island_manager, &mut self.colliders, &mut self.impulse_joint_set, &mut self.multibody_joint_set, true);
+        _ = self.rigid_bodies.remove(
+            body_handle,
+            &mut self.island_manager,
+            &mut self.colliders,
+            &mut self.impulse_joint_set,
+            &mut self.multibody_joint_set,
+            true,
+        );
     }
 
     pub fn get_physics_obj_num(&self) -> usize {
@@ -103,19 +113,24 @@ impl World {
 
     fn iso_to_vec2_rot(&self, isometry: &Isometry<Real>) -> (Vec2, f32) {
         let pos = Vec2::new(isometry.translation.x, isometry.translation.y);
-        let rot = isometry.rotation.angle()+PI;
+        let rot = isometry.rotation.angle() + PI;
         return (pos, rot);
     }
 
     pub fn get_physics_data(&self, handle: RigidBodyHandle) -> PhysicsData {
-        let rb = self.rigid_bodies.get(handle).expect("handle to non-existent rigid body");
+        let rb = self
+            .rigid_bodies
+            .get(handle)
+            .expect("handle to non-existent rigid body");
         let iso = rb.position();
         let (pos, rot) = self.iso_to_vec2_rot(iso);
-        let data = PhysicsData {position: pos, rotation: rot};
+        let data = PhysicsData {
+            position: pos,
+            rotation: rot,
+        };
         return data;
     }
 }
-
 
 pub struct PhysicsData {
     pub position: Vec2,

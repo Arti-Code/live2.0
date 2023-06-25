@@ -1,20 +1,20 @@
 #![allow(unused)]
-use std::collections::HashMap;
 use std::collections::hash_map::Iter;
 use std::collections::hash_map::IterMut;
+use std::collections::HashMap;
 use std::f32::consts::PI;
 
-use macroquad::{prelude::*, color}; 
+use macroquad::{color, prelude::*};
 //use parry2d::shape::*;
-use ::rand::{Rng, thread_rng};
-use rapier2d::prelude::RigidBodyHandle;
-use rapier2d::geometry::*;
-use crate::kinetic::{Detection, contact_circles};
-use crate::util::*;
 use crate::consts::*;
-use crate::timer::*;
+use crate::kinetic::{contact_circles, Detection};
 use crate::neuro::*;
+use crate::timer::*;
+use crate::util::*;
 use crate::world::*;
+use ::rand::{thread_rng, Rng};
+use rapier2d::geometry::*;
+use rapier2d::prelude::RigidBodyHandle;
 
 pub struct Agent {
     pub pos: Vec2,
@@ -45,12 +45,12 @@ impl Agent {
         Self {
             pos: random_position(WORLD_W, WORLD_H),
             rot: random_rotation(),
-            vel: rand::gen_range(0.0, 1.0)*AGENT_SPEED,
+            vel: rand::gen_range(0.0, 1.0) * AGENT_SPEED,
             ang_vel: 0.0,
             size: s,
-            vision_range: (rand::gen_range(0.5, 1.5)*AGENT_VISION_RANGE).round(),
-            max_eng: s.powi(2)*10.0,
-            eng: s.powi(2)*10.0,
+            vision_range: (rand::gen_range(0.5, 1.5) * AGENT_VISION_RANGE).round(),
+            max_eng: s.powi(2) * 10.0,
+            eng: s.powi(2) * 10.0,
             color: random_color(),
             pulse: rand::gen_range(0.0, 1.0),
             shape: Ball { radius: s },
@@ -68,24 +68,26 @@ impl Agent {
         let dir = Vec2::from_angle(self.rot);
         let x0 = self.pos.x;
         let y0 = self.pos.y;
-        let x1 = x0 + dir.x * self.size*1.0;
-        let y1 = y0 + dir.y * self.size*1.0;
-        let x2 = x0 + dir.x * self.size*2.0;
-        let y2 = y0 + dir.y * self.size*2.0;
+        let x1 = x0 + dir.x * self.size * 1.0;
+        let y1 = y0 + dir.y * self.size * 1.0;
+        let x2 = x0 + dir.x * self.size * 2.0;
+        let y2 = y0 + dir.y * self.size * 2.0;
         if self.motor {
-            let tail = Vec2::from_angle(self.rot+(self.motor_phase*0.2));
-            let x3 = x0 - tail.x * self.size*1.6;
-            let y3 = y0 - tail.y * self.size*1.6;
-            draw_circle_lines(x3, y3, self.size/2.0, 2.0, self.color);
+            let tail = Vec2::from_angle(self.rot + (self.motor_phase * 0.2));
+            let x3 = x0 - tail.x * self.size * 1.6;
+            let y3 = y0 - tail.y * self.size * 1.6;
+            draw_circle_lines(x3, y3, self.size / 2.0, 2.0, self.color);
         }
         let pulse = (self.pulse * 2.0) - 1.0;
         if field_of_view && !self.enemy.is_empty() {
-            let x0 = self.pos.x; let y0 = self.pos.y;
-            let x1 = self.enemy.pos.x; let y1 = self.enemy.pos.y;
+            let x0 = self.pos.x;
+            let y0 = self.pos.y;
+            let x1 = self.enemy.pos.x;
+            let y1 = self.enemy.pos.y;
             draw_line(x0, y0, x1, y1, 0.5, RED);
         }
         draw_circle_lines(x0, y0, self.size, 2.0, self.color);
-        draw_circle(x0, y0, (self.size/2.0)*pulse.abs(), self.color);
+        draw_circle(x0, y0, (self.size / 2.0) * pulse.abs(), self.color);
         draw_line(x1, y1, x2, y2, 1.0, self.color);
         if field_of_view {
             draw_circle_lines(x0, y0, self.vision_range, 0.75, GRAY);
@@ -101,40 +103,38 @@ impl Agent {
                 match physics.rigid_bodies.get_mut(handle) {
                     Some(body) => {
                         let dir = Vec2::from_angle(self.rot);
-                        let v = dir*self.vel;
+                        let v = dir * self.vel;
                         body.set_linvel([v.x, v.y].into(), true);
                         body.set_angvel(self.ang_vel, true);
-                    },
-                    None => {},
+                    }
+                    None => {}
                 }
-            },
-            None => {},
+            }
+            None => {}
         }
-
     }
 
-    pub fn update(&mut self, dt: f32) -> bool{
+    pub fn update(&mut self, dt: f32) -> bool {
         if self.analize_timer.update(dt) {
             let outputs = self.analizer.analize();
             if outputs[0] >= 0.0 {
                 self.vel = outputs[0] * AGENT_SPEED;
-            }
-            else {
+            } else {
                 self.vel = 0.0;
             }
             self.ang_vel = outputs[1] * AGENT_ROTATION;
         }
         //self.rot += self.ang_vel * dt;
         //self.rot = self.rot % (2.0*PI);
-        self.pulse = (self.pulse + dt*0.25)%1.0;
+        self.pulse = (self.pulse + dt * 0.25) % 1.0;
         if self.motor {
             if self.motor_side {
-                self.motor_phase = self.motor_phase + dt*5.0;
+                self.motor_phase = self.motor_phase + dt * 5.0;
                 if self.motor_phase >= 1.0 {
                     self.motor_side = false;
                 }
             } else {
-                self.motor_phase = self.motor_phase - dt*5.0;
+                self.motor_phase = self.motor_phase - dt * 5.0;
                 if self.motor_phase <= -1.0 {
                     self.motor_side = true;
                 }
@@ -161,9 +161,10 @@ impl Agent {
     }
 
     pub fn update_detection(&mut self, target: &Detection) {
-        self.enemy.add_closer(target.distance, target.angle, target.pos.clone());
+        self.enemy
+            .add_closer(target.distance, target.angle, target.pos.clone());
     }
-    
+
     pub fn add_energy(&mut self, e: f32) {
         self.eng += e;
         if self.eng > self.max_eng {
@@ -172,10 +173,8 @@ impl Agent {
     }
 }
 
-
-
 pub struct AgentsBox {
-    pub agents: HashMap<u64, Agent>
+    pub agents: HashMap<u64, Agent>,
 }
 
 impl AgentsBox {
@@ -211,7 +210,7 @@ impl AgentsBox {
     pub fn get_iter(&self) -> Iter<u64, Agent> {
         return self.agents.iter();
     }
-    
+
     pub fn get_iter_mut(&mut self) -> IterMut<u64, Agent> {
         return self.agents.iter_mut();
     }

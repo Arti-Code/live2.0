@@ -1,22 +1,28 @@
 use std::collections::HashMap;
 
-use parry2d::query::contact;
-use parry2d::{math::*, query::Contact}; 
-use parry2d::shape::*;
 use glam;
-use nalgebra::*;
 use macroquad::math::Vec2;
+use nalgebra::*;
+use parry2d::query::contact;
+use parry2d::shape::*;
+use parry2d::{math::*, query::Contact};
 //use rapier2d::prelude::*;
 
 use crate::agent::Agent;
-
 
 fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32> {
     let iso = Isometry2::new(Vector2::new(posx, posy), rotation);
     return iso;
 }
 
-pub fn contact_circles(pos1: Vec2, rot1: f32, rad1: f32, pos2: Vec2, rot2: f32, rad2: f32) -> Option<Contact> {
+pub fn contact_circles(
+    pos1: Vec2,
+    rot1: f32,
+    rad1: f32,
+    pos2: Vec2,
+    rot2: f32,
+    rad2: f32,
+) -> Option<Contact> {
     let v1 = glam::Vec2::new(pos1.x, pos1.y);
     let v2 = glam::Vec2::new(pos2.x, pos2.y);
     let pos1 = make_isometry(v1.x, v1.y, rot1);
@@ -30,7 +36,7 @@ pub fn contact_circles(pos1: Vec2, rot1: f32, rad1: f32, pos2: Vec2, rot2: f32, 
 pub fn contact_mouse(mouse_pos: Vec2, target_pos: Vec2, target_rad: f32) -> bool {
     let v1 = glam::Vec2::new(mouse_pos.x, mouse_pos.y);
     let v2 = glam::Vec2::new(target_pos.x, target_pos.y);
-    let pos1 = make_isometry(v1.x, v1.y, 0.0 );
+    let pos1 = make_isometry(v1.x, v1.y, 0.0);
     let pos2 = make_isometry(v2.x, v2.y, 0.0);
     let ball1 = Ball::new(2.0);
     let ball2 = Ball::new(target_rad);
@@ -39,7 +45,6 @@ pub fn contact_mouse(mouse_pos: Vec2, target_pos: Vec2, target_rad: f32) -> bool
         None => false,
     }
 }
-
 
 //      **********************************************
 //      **                   ROT                    **
@@ -97,7 +102,6 @@ impl Rot {
         }
     }
 }
-
 
 //      **********************************************
 //      **               DETECTIONS                 **
@@ -182,23 +186,24 @@ pub struct DetectionsMap {
 
 impl DetectionsMap {
     pub fn new() -> Self {
-        Self { detections: HashMap::new(), sources: HashMap::new() }
+        Self {
+            detections: HashMap::new(),
+            sources: HashMap::new(),
+        }
     }
     pub fn add_detection(&mut self, id: u64, detection: Detection) {
         let old_detection = self.detections.get(&id);
         let actual = match old_detection {
-            Some(actual_detection) if actual_detection.distance > detection.distance => {
-                detection
-            },
+            Some(actual_detection) if actual_detection.distance > detection.distance => detection,
             Some(actual_detection) if actual_detection.distance <= detection.distance => {
-                Detection::new(actual_detection.distance, actual_detection.angle, actual_detection.pos)
-            },
-            Some(_) => {
-                Detection::new(f32::NAN, f32::NAN, Vec2::NAN)
+                Detection::new(
+                    actual_detection.distance,
+                    actual_detection.angle,
+                    actual_detection.pos,
+                )
             }
-            None => {
-                detection
-            }
+            Some(_) => Detection::new(f32::NAN, f32::NAN, Vec2::NAN),
+            None => detection,
         };
         self.detections.insert(id, actual);
     }
@@ -210,9 +215,8 @@ impl DetectionsMap {
     }
     pub fn get_detection(&mut self, id: u64) -> Option<&Detection> {
         return self.detections.get(&id);
-    } 
+    }
 }
-
 
 //      **********************************************
 //      **                 CONTACTS                 **
@@ -231,7 +235,9 @@ pub struct CollisionsMap {
 
 impl CollisionsMap {
     pub fn new() -> Self {
-        Self { contacts: HashMap::new() }
+        Self {
+            contacts: HashMap::new(),
+        }
     }
     pub fn add_collision(&mut self, id: u64, hit: Hit) {
         self.contacts.insert(id, hit);
@@ -244,7 +250,7 @@ impl CollisionsMap {
     }
     pub fn get_collision(&mut self, id: u64) -> Option<&Hit> {
         return self.contacts.get(&id);
-    } 
+    }
 }
 
 pub struct Collisions {
