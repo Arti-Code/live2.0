@@ -6,6 +6,7 @@ use parry2d::shape::*;
 use glam;
 use nalgebra::*;
 use macroquad::math::Vec2;
+//use rapier2d::prelude::*;
 
 use crate::agent::Agent;
 

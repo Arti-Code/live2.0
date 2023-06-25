@@ -5,9 +5,10 @@ use std::collections::hash_map::IterMut;
 use std::f32::consts::PI;
 
 use macroquad::{prelude::*, color}; 
-use parry2d::shape::*;
+//use parry2d::shape::*;
 use ::rand::{Rng, thread_rng};
 use rapier2d::prelude::RigidBodyHandle;
+use rapier2d::geometry::*;
 use crate::kinetic::{Detection, contact_circles};
 use crate::util::*;
 use crate::consts::*;
