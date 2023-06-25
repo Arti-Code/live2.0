@@ -3,7 +3,6 @@ use nalgebra::{Unit, Complex, Isometry2};
 use rapier2d::{prelude::*, na::Vector2}; 
 use macroquad::prelude::*;
 use std::f32::consts::PI;
-//use crate::element::*;
 use std::time::Duration;
 use std::thread::sleep;
 use crossbeam::*;

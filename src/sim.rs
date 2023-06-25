@@ -1,7 +1,5 @@
 //#![allow(unused)]
 
-// main Simulation struct
-
 use std::f32::consts::PI;
 use macroquad::prelude::*;
 use macroquad::camera::Camera2D;
@@ -14,6 +12,7 @@ use crate::source::*;
 use crate::util::Signals;
 use crate::object::*;
 use crate::world::*;
+use crate::camera::*;
 
 
 pub struct Simulation {
@@ -21,12 +20,11 @@ pub struct Simulation {
     pub world_size: Vec2,
     pub world: World,
     zoom_rate: f32,
+    screen_ratio: f32,
     pub camera: Camera2D,
     pub running: bool,
     pub sim_time: f64,
     config: SimConfig,
-    pub collisions_map: CollisionsMap,
-    pub detections_map: DetectionsMap,
     pub ui: UISystem,
     pub sim_state: SimState,
     pub signals: Signals,
@@ -46,23 +44,16 @@ struct CamConfig {
 
 impl Simulation {
     pub fn new(configuration: SimConfig) -> Self {
-        let scr_ratio = SCREEN_WIDTH/SCREEN_HEIGHT;
-        let zoom_rate = 1.0/1000.0;
         Self {
             simulation_name: String::new(),
             world_size: Vec2 { x: WORLD_W, y: WORLD_H },
             world: World::new(),
-            zoom_rate: scr_ratio,
-            camera: Camera2D {
-                zoom: Vec2 {x: zoom_rate, y: zoom_rate*scr_ratio},
-                offset: Vec2 {x: -1.0, y: -1.0},
-                ..Default::default()
-            },
+            zoom_rate: 1.0/600.0,
+            screen_ratio: SCREEN_WIDTH/SCREEN_HEIGHT,
+            camera: create_camera(),
             running: false,
             sim_time: 0.0,    
             config: configuration,
-            collisions_map: CollisionsMap::new(),
-            detections_map: DetectionsMap::new(),
             ui: UISystem::new(),
             sim_state: SimState::new(),
             signals: Signals::new(),
@@ -86,8 +77,6 @@ impl Simulation {
         self.world = World::new();
         self.agents.agents.clear();
         self.sim_time = 0.0;
-        self.collisions_map = CollisionsMap::new();
-        self.detections_map = DetectionsMap::new();
         self.sim_state = SimState::new();
         self.sim_state.sim_name = String::from(&self.simulation_name);
         self.signals = Signals::new();
@@ -203,48 +192,7 @@ impl Simulation {
 
     pub fn input(&mut self) {
         self.mouse_input();
-        self.keys_input();
-    }
-
-    fn keys_input(&mut self) {
-        if is_key_pressed(KeyCode::KpAdd) {
-            //let ratio = self.cam_config.ratio;
-            //self.camera.zoom += Vec2::new(0.0001, 0.0001*ratio);
-        }
-        if is_key_pressed(KeyCode::KpSubtract) {
-            if self.camera.zoom.x > 0.0001 {
-                //let ratio = self.cam_config.ratio;
-                //self.camera.zoom -= Vec2::new(0.0001, 0.0001*ratio);
-            }
-        }
-        if is_key_pressed(KeyCode::Kp4) {
-            self.camera.offset.x += 0.1;
-        }
-        if is_key_pressed(KeyCode::Kp6) {
-            self.camera.offset.x -= 0.1;
-        }
-        if is_key_pressed(KeyCode::Kp8) {
-            self.camera.offset.y -= 0.1;
-        }
-        if is_key_pressed(KeyCode::Kp2) {
-            self.camera.offset.y += 0.1;
-        }
-        if is_key_pressed(KeyCode::Left) {
-            println!("target");
-            self.camera.target.x += 0.1;
-        }
-        if is_key_pressed(KeyCode::Right) {
-            println!("target");
-            self.camera.target.x -= 0.1;
-        }
-        if is_key_pressed(KeyCode::Up) {
-            println!("target");
-            self.camera.target.y -= 0.1;
-        }
-        if is_key_pressed(KeyCode::Down) {
-            println!("target");
-            self.camera.target.y += 0.1;
-        }
+        control_camera(&mut self.camera, self.screen_ratio);
     }
 
     fn mouse_input(&mut self) {
@@ -252,15 +200,8 @@ impl Simulation {
             if !self.ui.pointer_over {
                 self.selected = 0;
                 let (mouse_posx, mouse_posy) = mouse_position();
-                let offset = self.camera.offset;
-                let target = self.camera.target;
-                let zoom = self.camera.zoom;
-                let rotation = self.camera.rotation;
                 let mouse_pos = Vec2::new(mouse_posx, mouse_posy);
-                //println!("rel mouse: [{} | {}]", rel_x, rel_y);
-                //println!("offset: [{} | {}], zoom: [{} | {}], target: [{} | {}], rotation: [{}]", offset.x, offset.y, zoom.x, zoom.y, target.x, target.y, rotation);
                 let rel_coords = self.camera.screen_to_world(mouse_pos);
-                //println!("SCR COORDS: [{} | {}] ==> WORLD COORDS: [{} | {}]", mouse_posx, mouse_posy, rel_coords.x, rel_coords.y);
                 for (id, agent) in self.agents.get_iter() {
                     if contact_mouse(rel_coords, agent.pos, agent.size) {
                         self.selected = *id;
