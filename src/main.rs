@@ -14,6 +14,7 @@ mod prelude;
 mod world;
 mod source;
 mod object;
+mod camera;
 
 use std::{time, thread};
 use macroquad::miniquad::conf::Icon;

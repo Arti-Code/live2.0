@@ -14,6 +14,7 @@ use crate::source::*;
 use crate::util::Signals;
 use crate::object::*;
 use crate::world::*;
+use crate::camera::*;
 
 
 pub struct Simulation {
@@ -21,7 +22,7 @@ pub struct Simulation {
     pub world_size: Vec2,
     pub world: World,
     zoom_rate: f32,
-    scr_ratio: f32,
+    screen_ratio: f32,
     pub camera: Camera2D,
     pub running: bool,
     pub sim_time: f64,
@@ -51,13 +52,9 @@ impl Simulation {
             simulation_name: String::new(),
             world_size: Vec2 { x: WORLD_W, y: WORLD_H },
             world: World::new(),
-            zoom_rate: zoom_rate,
-            scr_ratio: scr_ratio,
-            camera: Camera2D {
-                zoom: Vec2 {x: zoom_rate, y: zoom_rate*scr_ratio},
-                offset: Vec2 {x: -0.5, y: -0.5},
-                ..Default::default()
-            },
+            zoom_rate: 1.0 / 600.0,
+            screen_ratio: SCREEN_WIDTH / SCREEN_HEIGHT,
+            camera: create_camera(),
             running: false,
             sim_time: 0.0,    
             config: configuration,
