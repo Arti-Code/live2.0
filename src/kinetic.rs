@@ -7,7 +7,7 @@ use glam;
 use nalgebra::*;
 use macroquad::math::Vec2;
 
-use crate::agent::Molecule;
+use crate::particle::Molecule;
 
 
 fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32> {

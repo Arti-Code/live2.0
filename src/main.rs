@@ -4,7 +4,7 @@
 mod sim;
 mod consts;
 mod util;
-mod agent;
+mod particle;
 mod timer;
 mod kinetic;
 mod ui;
@@ -23,7 +23,7 @@ use crate::sim::*;
 //use crate::world::*;
 use crate::consts::*;
 use crate::util::*;
-use crate::agent::*;
+use crate::particle::*;
 use macroquad::time::*;
 use crate::ui::*;
 pub use crate::source::*;

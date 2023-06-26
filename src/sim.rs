@@ -6,7 +6,7 @@ use std::f32::consts::PI;
 use macroquad::prelude::*;
 use macroquad::camera::Camera2D;
 use egui_macroquad;
-use crate::agent::*;
+use crate::particle::*;
 use crate::consts::*;
 use crate::kinetic::*;
 use crate::ui::*;
@@ -33,7 +33,7 @@ pub struct Simulation {
     select_phase: f32,
     pub selected: u64,
     pub mouse_state: MouseState,
-    pub agents: AgentsBox,
+    pub molecules: MoleculesBox,
 }
 
 struct CamConfig {
@@ -64,7 +64,7 @@ impl Simulation {
             selected: 0,
             select_phase: 0.0,
             mouse_state: MouseState { pos: Vec2::NAN},
-            agents: AgentsBox::new(),
+            molecules: MoleculesBox::new(),
             //sources: SourcesBox::new(),
         }
     }
@@ -79,7 +79,7 @@ impl Simulation {
             },
         };
         self.world = World::new();
-        self.agents.agents.clear();
+        self.molecules.molecules.clear();
         self.sim_time = 0.0;
         self.sim_state = SimState::new();
         self.sim_state.sim_name = String::from(&self.simulation_name);
@@ -92,8 +92,8 @@ impl Simulation {
 
     pub fn init(&mut self) {
         self.world.build();
-        let agents_num = self.config.agents_init_num;
-        self.agents.add_many_agents(1024, &mut self.world);
+        let molecules_num = self.config.molecules_init_num;
+        self.molecules.add_many_molecules(1024, &mut self.world);
         //self.sources.add_many(48);
     }
 
@@ -102,9 +102,9 @@ impl Simulation {
         self.signals.new_sim_name = "Simulation".to_string();
     }
 
-    fn update_agents(&mut self) {
-        for (id, agent) in self.agents.get_iter_mut() {
-            agent.update2(&mut self.world);
+    fn update_molecules(&mut self) {
+        for (id, molecule) in self.molecules.get_iter_mut() {
+            molecule.update2(&mut self.world);
         }
         let dt = self.sim_state.dt;
     }
@@ -112,9 +112,9 @@ impl Simulation {
     pub fn update(&mut self) {
         self.signals_check();
         self.update_sim_state();
-        self.check_agents_num();
+        self.check_molecules_num();
         self.calc_selection_time();
-        self.update_agents();
+        self.update_molecules();
         self.world.step_physics();
     }
 
@@ -124,17 +124,17 @@ impl Simulation {
         clear_background(BLACK);
         draw_rectangle_lines(0.0, 0.0, self.world_size.x, self.world_size.y, 3.0, WHITE);
         self.draw_grid(50);
-        self.draw_agents();
+        self.draw_molecules();
     }
 
-    fn draw_agents(&self) {
-        for (id, agent) in self.agents.get_iter() {
-            agent.draw();
+    fn draw_molecules(&self) {
+        for (id, molecule) in self.molecules.get_iter() {
+            molecule.draw();
         }
-        match self.agents.get(self.selected) {
-            Some(selected_agent) => {
-                let pos = Vec2::new(selected_agent.pos.x, selected_agent.pos.y);
-                let s = selected_agent.size;
+        match self.molecules.get(self.selected) {
+            Some(selected_molecule) => {
+                let pos = Vec2::new(selected_molecule.pos.x, selected_molecule.pos.y);
+                let s = selected_molecule.size;
                 draw_circle_lines(pos.x, pos.y, 2.0*s+(self.select_phase.sin()*s*0.5), 1.0, ORANGE);
             },
             None => {},
@@ -155,10 +155,10 @@ impl Simulation {
     }
 
     pub fn signals_check(&mut self) {
-        if self.signals.spawn_agent {
-            let agent = Molecule::new();
-            self.agents.add_agent(agent, &mut self.world);
-            self.signals.spawn_agent = false;
+        if self.signals.spawn_molecule {
+            let molecule = Molecule::new();
+            self.molecules.add_molecule(molecule, &mut self.world);
+            self.signals.spawn_molecule = false;
         }
         if self.signals.new_sim {
             self.signals.new_sim = false;
@@ -169,9 +169,9 @@ impl Simulation {
     }
 
     fn get_selected(&self) -> Option<&Molecule> {
-        match self.agents.get(self.selected) {
-            Some(selected_agent) => {
-                return Some(selected_agent);
+        match self.molecules.get(self.selected) {
+            Some(selected_molecule) => {
+                return Some(selected_molecule);
             },
             None => {
                 return None;
@@ -198,8 +198,8 @@ impl Simulation {
                 //println!("offset: [{} | {}], zoom: [{} | {}], target: [{} | {}], rotation: [{}]", offset.x, offset.y, zoom.x, zoom.y, target.x, target.y, rotation);
                 let rel_coords = self.camera.screen_to_world(mouse_pos);
                 //println!("SCR COORDS: [{} | {}] ==> WORLD COORDS: [{} | {}]", mouse_posx, mouse_posy, rel_coords.x, rel_coords.y);
-                for (id, agent) in self.agents.get_iter() {
-                    if contact_mouse(rel_coords, agent.pos, agent.size) {
+                for (id, molecule) in self.molecules.get_iter() {
+                    if contact_mouse(rel_coords, molecule.pos, molecule.size) {
                         self.selected = *id;
                         break; 
                     }
@@ -214,17 +214,14 @@ impl Simulation {
         self.sim_state.sim_time += self.sim_state.dt as f64;
         let (mouse_x, mouse_y) = mouse_position();
         self.mouse_state.pos = Vec2::new(mouse_x, mouse_y);
-        self.sim_state.agents_num = self.agents.count() as i32;
+        self.sim_state.molecules_num = self.molecules.count() as i32;
         self.sim_state.physics_num = self.world.get_physics_obj_num() as i32;
     }
 
-    fn check_agents_num(&mut self) {
-        if self.sim_state.agents_num < (self.config.agent_min_num as i32) {
-            let agent = Molecule::new();
-            self.agents.add_agent(agent, &mut self.world);
-        }
-        if self.sim_state.sources_num < (self.config.sources_min_num as i32) {
-            let source = Source::new();
+    fn check_molecules_num(&mut self) {
+        if self.sim_state.molecules_num < (self.config.molecule_min_num as i32) {
+            let molecule = Molecule::new();
+            self.molecules.add_molecule(molecule, &mut self.world);
         }
     }
 
@@ -234,8 +231,8 @@ impl Simulation {
     }
 
     pub fn process_ui(&mut self) {
-        let marked_agent = self.agents.get(self.selected);
-        self.ui.ui_process(&self.sim_state, marked_agent, &mut self.signals)
+        let marked_molecule = self.molecules.get(self.selected);
+        self.ui.ui_process(&self.sim_state, marked_molecule, &mut self.signals)
     }
 
     pub fn draw_ui(&self) {
@@ -251,39 +248,27 @@ impl Simulation {
 //?         [[[SIM_CONFIG]]]
 #[derive(Clone, Copy)]
 pub struct SimConfig {
-    pub agents_init_num: usize,
-    pub agent_min_num: usize,
-    pub agent_speed: f32,
-    pub agent_vision_range: f32,
-    pub agent_rotation: f32,
-    pub sources_init_num: usize,
-    pub sources_min_num: usize,
+    pub molecules_init_num: usize,
+    pub molecule_min_num: usize,
+    pub molecule_speed: f32,
 }
 
 impl Default for SimConfig {
     fn default() -> Self {
         Self {
-            agents_init_num: AGENTS_NUM,
-            agent_min_num: AGENTS_NUM_MIN,
-            agent_speed: AGENT_SPEED,
-            agent_rotation: AGENT_ROTATION,
-            agent_vision_range: AGENT_VISION_RANGE,
-            sources_init_num: SOURCES_NUM,
-            sources_min_num: SOURCES_NUM_MIN,
+            molecules_init_num: MOLECULE_NUM,
+            molecule_min_num: MOLECULE_NUM_MIN,
+            molecule_speed: MOLECULE_SPEED,
         }
     }
 }
 
 impl SimConfig {
-    pub fn new(agents_num: usize, agents_min_num: usize, agent_speed: f32, agent_turn: f32, vision_range: f32, sources_num: usize, sources_min_num: usize) -> Self {
+    pub fn new(molecules_num: usize, molecules_min_num: usize, molecule_speed: f32, molecule_turn: f32, vision_range: f32, sources_num: usize, sources_min_num: usize) -> Self {
         Self {
-            agents_init_num: agents_num,
-            agent_min_num: agents_min_num,
-            agent_speed: agent_speed,
-            agent_rotation: agent_turn,
-            agent_vision_range: vision_range,
-            sources_init_num: sources_num,
-            sources_min_num: sources_min_num,
+            molecules_init_num: molecules_num,
+            molecule_min_num: molecules_min_num,
+            molecule_speed: molecule_speed,
         }
     }
 }
@@ -291,7 +276,7 @@ impl SimConfig {
 //?         [[[SIM_STATE]]]
 pub struct SimState {
     pub sim_name: String,
-    pub agents_num: i32,
+    pub molecules_num: i32,
     pub sources_num: i32,
     pub physics_num: i32,
     pub sim_time: f64,
@@ -303,7 +288,7 @@ impl SimState {
     pub fn new() -> Self {
         Self {
             sim_name: String::new(),
-            agents_num: 0,
+            molecules_num: 0,
             sources_num: 0,
             physics_num: 0,
             sim_time: 0.0,

@@ -9,7 +9,7 @@ use egui_extras::image::RetainedImage;
 use image::open;
 use macroquad::ui::StyleBuilder;
 
-use crate::agent::Molecule;
+use crate::particle::Molecule;
 use crate::consts::{SCREEN_WIDTH, SCREEN_HEIGHT};
 use crate::{progress_bar::*, Signals};
 use crate::sim::*;
@@ -37,7 +37,7 @@ impl UISystem {
             self.pointer_over = egui_ctx.is_pointer_over_area();
             self.build_top_menu(egui_ctx, &sim_state.sim_name);
             self.build_quit_window(egui_ctx);
-            self.build_monit_window(egui_ctx, sim_state.fps, sim_state.dt, sim_state.sim_time, sim_state.agents_num, sim_state.physics_num);
+            self.build_monit_window(egui_ctx, sim_state.fps, sim_state.dt, sim_state.sim_time, sim_state.molecules_num, sim_state.physics_num);
             self.build_mouse_window(egui_ctx);
             match agent {
                 Some(agent) => {
@@ -95,7 +95,7 @@ impl UISystem {
         });
     }
 
-    fn build_monit_window(&self, egui_ctx: &Context, fps: i32, delta: f32, time: f64, agents_num: i32, physics_num: i32) {
+    fn build_monit_window(&self, egui_ctx: &Context, fps: i32, delta: f32, time: f64, molecules_num: i32, physics_num: i32) {
         if self.state.performance {
             egui::Window::new("Monitor").default_pos((5.0, 100.0))
             .default_width(125.0)
@@ -106,7 +106,7 @@ impl UISystem {
                 ui.separator();
                 ui.label(format!("TIME: {}", time.round()));
                 ui.separator();
-                ui.label(format!("AGENTS: {}", agents_num));
+                ui.label(format!("AGENTS: {}", molecules_num));
                 ui.separator();
                 ui.label(format!("PHYSICS OBJECTS: {}", physics_num));
             });
@@ -217,7 +217,7 @@ impl UISystem {
                     mid.style_mut().visuals.extreme_bg_color = Color32::BLUE;
                     if mid.button(RichText::new("SPAWN").strong().color(Color32::WHITE)).clicked() {
                         //self.state.create = false;
-                        signals.spawn_agent = true;
+                        signals.spawn_molecule = true;
                     }
                 });
             });
@@ -238,7 +238,7 @@ pub struct UIState {
     pub mouse: bool,
     pub create: bool,
     pub quit: bool,
-    pub agents_num: i32,
+    pub molecules_num: i32,
     pub new_sim: bool,
     pub new_sim_name: String,
 }
@@ -251,7 +251,7 @@ impl UIState {
             mouse: false,
             create: false,
             quit: false,
-            agents_num: 0,
+            molecules_num: 0,
             new_sim: false,
             new_sim_name: String::new(),
         }

@@ -55,7 +55,7 @@ pub fn wrap_around(v: &Vec2) -> Vec2 {
 
 //?         [[[SIGNALS]]]
 pub struct Signals {
-    pub spawn_agent: bool,
+    pub spawn_molecule: bool,
     pub new_sim: bool,
     pub new_sim_name: String,
 }
@@ -63,7 +63,7 @@ pub struct Signals {
 impl Signals {
     pub fn new() -> Self {
         Self {
-            spawn_agent: false,
+            spawn_molecule: false,
             new_sim: false,
             new_sim_name: String::new(),
         }
