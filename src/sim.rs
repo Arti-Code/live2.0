@@ -181,48 +181,7 @@ impl Simulation {
 
     pub fn input(&mut self) {
         self.mouse_input();
-        self.keys_input();
-    }
-
-    fn keys_input(&mut self) {
-        if is_key_pressed(KeyCode::KpAdd) {
-            let ratio = self.scr_ratio;
-            self.camera.zoom += Vec2::new(0.0001, 0.0001*ratio);
-        }
-        if is_key_pressed(KeyCode::KpSubtract) {
-            if self.camera.zoom.x > 0.0001 {
-                let ratio = self.scr_ratio;
-                self.camera.zoom -= Vec2::new(0.0001, 0.0001*ratio);
-            }
-        }
-        if is_key_pressed(KeyCode::Kp4) {
-            self.camera.offset.x += 0.1;
-        }
-        if is_key_pressed(KeyCode::Kp6) {
-            self.camera.offset.x -= 0.1;
-        }
-        if is_key_pressed(KeyCode::Kp8) {
-            self.camera.offset.y -= 0.1;
-        }
-        if is_key_pressed(KeyCode::Kp2) {
-            self.camera.offset.y += 0.1;
-        }
-        if is_key_pressed(KeyCode::Left) {
-            println!("target");
-            self.camera.target.x += 0.1;
-        }
-        if is_key_pressed(KeyCode::Right) {
-            println!("target");
-            self.camera.target.x -= 0.1;
-        }
-        if is_key_pressed(KeyCode::Up) {
-            println!("target");
-            self.camera.target.y -= 0.1;
-        }
-        if is_key_pressed(KeyCode::Down) {
-            println!("target");
-            self.camera.target.y += 0.1;
-        }
+        control_camera(&mut self.camera, self.screen_ratio);
     }
 
     fn mouse_input(&mut self) {
