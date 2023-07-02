@@ -35,6 +35,7 @@ impl UISystem {
         sim_state: &SimState,
         agent: Option<&Agent>,
         signals: &mut Signals,
+        camera2d: &Camera2D,
     ) {
         egui_macroquad::ui(|egui_ctx| {
             self.pointer_over = egui_ctx.is_pointer_over_area();
@@ -48,7 +49,7 @@ impl UISystem {
                 sim_state.agents_num,
                 sim_state.physics_num,
             );
-            self.build_mouse_window(egui_ctx);
+            self.build_mouse_window(egui_ctx, camera2d);
             match agent {
                 Some(agent) => self.build_inspect_window(egui_ctx, agent),
                 None => {}
@@ -217,14 +218,20 @@ impl UISystem {
         }
     }
 
-    fn build_mouse_window(&self, egui_ctx: &Context) {
+    fn build_mouse_window(&self, egui_ctx: &Context, camera2d: &Camera2D) {
         if self.state.mouse {
             let (mouse_x, mouse_y) = mouse_position();
-            egui::Window::new("Mouse")
+            egui::Window::new("DEBUG INFO")
                 .default_pos((300.0, 5.0))
-                .default_width(125.0)
+                .default_width(150.0)
                 .show(egui_ctx, |ui| {
-                    ui.label(format!("X: {} | Y: {}", mouse_x.round(), mouse_y.round()));
+                    ui.label(format!("MOUSE [X: {} | Y: {}]", mouse_x.round(), mouse_y.round()));
+                    ui.separator();
+                    ui.label(RichText::new("CAMERA").strong());
+                    ui.label(format!("target [x:{} | Y:{}]", camera2d.target.x.round(), camera2d.target.y.round()));
+                    ui.label(format!("offset [x:{} | Y:{}]", camera2d.offset.x.round(), camera2d.offset.y.round()));
+                    ui.label(format!("zoom [x:{} | Y:{}]", camera2d.zoom.x.round(), camera2d.zoom.y.round()));
+                    ui.label(format!("rotation: {}", camera2d.rotation.round()));
                 });
         }
     }
@@ -314,7 +321,7 @@ impl UISystem {
     fn build_create_window(&self, egui_ctx: &Context, signals: &mut Signals) {
         if self.state.create {
             egui::Window::new("Creator")
-                .default_pos((425.0, 5.0))
+                .default_pos((450.0, 5.0))
                 .default_width(125.0)
                 .show(egui_ctx, |ui| {
                     ui.horizontal(|head| {

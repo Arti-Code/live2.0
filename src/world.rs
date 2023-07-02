@@ -62,9 +62,9 @@ impl World {
         
     }
 
-    pub fn add_circle_body(&mut self, position: &Vec2, radius: f32, detection_range: Option<f32>) -> RigidBodyHandle {
+    pub fn add_circle_body(&mut self, key: u64, position: &Vec2, radius: f32, detection_range: Option<f32>) -> RigidBodyHandle {
         let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
-        let ball = RigidBodyBuilder::dynamic().position(iso).build();
+        let ball = RigidBodyBuilder::dynamic().position(iso).user_data(key as u128).build();
         let mut collider = ColliderBuilder::ball(radius)
             .active_collision_types(ActiveCollisionTypes::default())
             .active_events(ActiveEvents::COLLISION_EVENTS).build();

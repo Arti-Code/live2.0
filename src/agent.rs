@@ -19,6 +19,7 @@ use rapier2d::geometry::*;
 use rapier2d::prelude::RigidBodyHandle;
 
 pub struct Agent {
+    pub key: u64,
     pub pos: Vec2,
     pub rot: f32,
     pub vel: f32,
@@ -49,7 +50,9 @@ impl Agent {
         let s = rand::gen_range(AGENT_SIZE_MIN, AGENT_SIZE_MAX) as f32;
         let motor = thread_rng().gen_bool(1.0);
         let p = thread_rng().gen_range(0.2..0.8);
+
         Self {
+            key: thread_rng().gen::<u64>(),
             pos: random_position(WORLD_W, WORLD_H),
             rot: random_rotation(),
             vel: rand::gen_range(0.0, 1.0) * AGENT_SPEED,
@@ -110,6 +113,7 @@ impl Agent {
         draw_circle_lines(x0, y0, self.size, 2.0, self.color);
         draw_circle(x0, y0, (self.size / 2.0) * pulse.abs(), self.color);
         draw_line(x1, y1, x2, y2, 1.0, self.color);
+        draw_text(&self.key.to_string(), x0-80.0, y0-self.size*2.0, 20.0, WHITE);
         if field_of_view {
             draw_circle_lines(x0, y0, self.vision_range, 0.75, GRAY);
         }
@@ -269,8 +273,9 @@ impl AgentsBox {
     }
 
     pub fn add_agent(&mut self, mut agent: Agent, physics_world: &mut World) -> u64 {
-        let key: u64 = thread_rng().gen::<u64>();
-        let handle = physics_world.add_circle_body(&agent.pos, agent.size, Some(agent.vision_range));
+        //let key: u64 = thread_rng().gen::<u64>();
+        let key = agent.key;
+        let handle = physics_world.add_circle_body(key,&agent.pos, agent.size, Some(agent.vision_range));
         agent.physics_handle = Some(handle);
         self.agents.insert(key, agent);
         return key;

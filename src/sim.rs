@@ -53,6 +53,7 @@ impl Simulation {
             zoom_rate: 1.0 / 600.0,
             screen_ratio: SCREEN_WIDTH / SCREEN_HEIGHT,
             camera: create_camera(),
+            //camera: Camera2D::default(),
             running: false,
             sim_time: 0.0,
             config: configuration,
@@ -309,7 +310,7 @@ impl Simulation {
     pub fn process_ui(&mut self) {
         let marked_agent = self.agents.get(self.selected);
         self.ui
-            .ui_process(&self.sim_state, marked_agent, &mut self.signals)
+            .ui_process(&self.sim_state, marked_agent, &mut self.signals, &self.camera);
     }
 
     pub fn draw_ui(&self) {

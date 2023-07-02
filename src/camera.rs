@@ -5,7 +5,8 @@ pub fn create_camera() -> Camera2D {
     let scr_ratio = SCREEN_WIDTH/SCREEN_HEIGHT;
     let zoom_rate = 1.0/600.0;
     let camera2d = Camera2D {
-        zoom: Vec2 {x: zoom_rate, y: zoom_rate*scr_ratio},
+        //zoom: Vec2 {x: zoom_rate, y: zoom_rate*scr_ratio},
+        zoom: Vec2 {x: 1./SCREEN_WIDTH, y: -1./SCREEN_HEIGHT},
         target: Vec2 {x: WORLD_W/2.0, y: WORLD_H/2.0},
         ..Default::default()
     };
@@ -14,13 +15,15 @@ pub fn create_camera() -> Camera2D {
 
 pub fn control_camera(camera: &mut Camera2D, screen_ratio: f32) {
     if is_key_pressed(KeyCode::KpAdd) {
-        let ratio = screen_ratio;
-        camera.zoom += Vec2::new(0.0001, 0.0001*ratio);
+        //let ratio = screen_ratio;
+        let ratio = 1.0;
+        camera.zoom += Vec2::new(0.0001, -0.0001*ratio);
     }
     if is_key_pressed(KeyCode::KpSubtract) {
         if camera.zoom.x > 0.0001 {
-            let ratio = screen_ratio;
-            camera.zoom -= Vec2::new(0.0001, 0.0001*ratio);
+            //let ratio = screen_ratio;
+            let ratio = 1.0;
+            camera.zoom -= Vec2::new(0.0001, -0.0001*ratio);
         }
     }
     if is_key_pressed(KeyCode::Left) {
