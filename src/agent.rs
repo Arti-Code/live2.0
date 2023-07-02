@@ -5,8 +5,10 @@ use std::collections::HashMap;
 use std::f32::consts::PI;
 
 use macroquad::{color, prelude::*};
+use nalgebra::vector;
 //use parry2d::shape::*;
 use crate::consts::*;
+use crate::kinetic::make_isometry;
 use crate::kinetic::{contact_circles, Detection};
 use crate::neuro::*;
 use crate::timer::*;
@@ -30,11 +32,15 @@ pub struct Agent {
     pub shape: Ball,
     motor: bool,
     motor_phase: f32,
+    motor_phase2: f32,
     motor_side: bool,
     analize_timer: Timer,
     analizer: DummyNetwork,
     pub alife: bool,
-    enemy: Detection,
+    //enemy: Detection,
+    pub detected: Option<Detected>,
+    pub enemy: Option<RigidBodyHandle>,
+    pub enemy_position: Option<Vec2>,
     pub physics_handle: Option<RigidBodyHandle>,
 }
 
@@ -42,6 +48,7 @@ impl Agent {
     pub fn new() -> Self {
         let s = rand::gen_range(AGENT_SIZE_MIN, AGENT_SIZE_MAX) as f32;
         let motor = thread_rng().gen_bool(1.0);
+        let p = thread_rng().gen_range(0.2..0.8);
         Self {
             pos: random_position(WORLD_W, WORLD_H),
             rot: random_rotation(),
@@ -55,12 +62,16 @@ impl Agent {
             pulse: rand::gen_range(0.0, 1.0),
             shape: Ball { radius: s },
             motor: motor,
-            motor_phase: thread_rng().gen_range(0.0..1.0),
+            motor_phase: p,
+            motor_phase2: p,
             motor_side: true,
             analize_timer: Timer::new(0.3, true, true, true),
             analizer: DummyNetwork::new(2),
             alife: true,
-            enemy: Detection::new_empty(),
+            detected: None,
+            enemy: None,
+            enemy_position: None,
+            //enemy: Detection::new_empty(),
             physics_handle: None,
         }
     }
@@ -73,18 +84,28 @@ impl Agent {
         let x2 = x0 + dir.x * self.size * 2.0;
         let y2 = y0 + dir.y * self.size * 2.0;
         if self.motor {
-            let tail = Vec2::from_angle(self.rot + (self.motor_phase * 0.2));
-            let x3 = x0 - tail.x * self.size * 1.6;
-            let y3 = y0 - tail.y * self.size * 1.6;
-            draw_circle_lines(x3, y3, self.size / 2.0, 2.0, self.color);
+            let tail = Vec2::from_angle(self.rot + (self.motor_phase * 0.5));
+            let tail2 = Vec2::from_angle(self.rot + (self.motor_phase2 * 0.5));
+            let x3 = x0 - tail.x * self.size * 1.4;
+            let y3 = y0 - tail.y * self.size * 1.4;
+            let x4 = x0 - tail2.x * self.size * 2.4;
+            let y4 = y0 - tail2.y * self.size * 2.4;
+            draw_circle(x3, y3, self.size / 2.0, self.color);
+            //draw_circle(x4, y4, self.size / 3.0, self.color);
+            //draw_line(x4, y4, x3, y3, self.size / 2.0, self.color)
         }
         let pulse = (self.pulse * 2.0) - 1.0;
-        if field_of_view && !self.enemy.is_empty() {
+        if !self.enemy.is_none() {
             let x0 = self.pos.x;
             let y0 = self.pos.y;
-            let x1 = self.enemy.pos.x;
-            let y1 = self.enemy.pos.y;
-            draw_line(x0, y0, x1, y1, 0.5, RED);
+            if let Some(rb) = self.enemy {
+                //let rb_handle = rb.target_handle;
+                if let Some(enemy_position) = self.enemy_position {
+                    let x1 = enemy_position.x;
+                    let y1 = enemy_position.y;
+                    draw_line(x0, y0, x1, y1, 0.5, self.color);
+                }
+            }
         }
         draw_circle_lines(x0, y0, self.size, 2.0, self.color);
         draw_circle(x0, y0, (self.size / 2.0) * pulse.abs(), self.color);
@@ -97,6 +118,8 @@ impl Agent {
     pub fn update2(&mut self, physics: &mut World) {
         match self.physics_handle {
             Some(handle) => {
+                self.update_enemy_position(physics);
+                //physics.get_contacts(handle);
                 let physics_data = physics.get_physics_data(handle);
                 self.pos = physics_data.position;
                 self.rot = physics_data.rotation;
@@ -106,6 +129,26 @@ impl Agent {
                         let v = dir * self.vel;
                         body.set_linvel([v.x, v.y].into(), true);
                         body.set_angvel(self.ang_vel, true);
+                        let mut raw_pos = Vec2::new(body.position().translation.x, body.position().translation.y);
+                        let mut out_of_edge = false;
+                        if raw_pos.x < 0.0 {
+                            raw_pos.x = 0.0;
+                            out_of_edge = true;
+                        } else if raw_pos.x > WORLD_W {
+                            raw_pos.x = WORLD_W;
+                            out_of_edge = true;
+                        }
+                        if raw_pos.y < 0.0 {
+                            raw_pos.y = 0.0;
+                            out_of_edge = true;
+                        } else if raw_pos.y > WORLD_H {
+                            raw_pos.y = WORLD_H;
+                            out_of_edge = true;
+                        }
+                        if out_of_edge {
+                            //let rot = body.rotation();
+                            body.set_position(make_isometry(raw_pos.x, raw_pos.y, self.rot), true);
+                        }
                     }
                     None => {}
                 }
@@ -114,8 +157,37 @@ impl Agent {
         }
     }
 
-    pub fn update(&mut self, dt: f32) -> bool {
+    fn update_enemy_position(&mut self, physics: &World) {
+        if let Some(rb) = self.enemy {
+            //let rb_handle = rb.target_handle;
+            self.enemy_position = physics.get_object_position(rb);
+            match self.enemy_position {
+                Some(_) => {},
+                None => {
+                    self.enemy = None;
+                }
+            }
+            //let x1 = enemy_position.x;
+            //let y1 = enemy_position.y;
+        }
+    }
+
+    pub fn update(&mut self, dt: f32, physics: &World) -> bool {
         if self.analize_timer.update(dt) {
+            match self.physics_handle {
+                Some(handle) => {
+                    if let Some((tg)) = physics.get_contacts2(handle){
+                        //self.detected = Some(Detected { dist: dist, target_handle: tg });
+                        self.enemy = Some(tg);
+                        self.update_enemy_position(physics);
+                    } else {
+                        //self.detected = None;
+                        self.enemy = None;
+                        self.enemy_position = None;
+                    }
+                },
+                None => {},
+            }
             let outputs = self.analizer.analize();
             if outputs[0] >= 0.0 {
                 self.vel = outputs[0] * AGENT_SPEED;
@@ -129,15 +201,20 @@ impl Agent {
         self.pulse = (self.pulse + dt * 0.25) % 1.0;
         if self.motor {
             if self.motor_side {
-                self.motor_phase = self.motor_phase + dt * 5.0;
+                self.motor_phase = self.motor_phase + dt * (1.0+self.vel);
                 if self.motor_phase >= 1.0 {
                     self.motor_side = false;
                 }
             } else {
-                self.motor_phase = self.motor_phase - dt * 5.0;
+                self.motor_phase = self.motor_phase - dt * (1.0+self.vel);
                 if self.motor_phase <= -1.0 {
                     self.motor_side = true;
                 }
+            }
+            if self.motor_side {
+                self.motor_phase2 = self.motor_phase2 + dt * (0.75+self.vel);
+            } else {
+                self.motor_phase2 = self.motor_phase2 - dt * (0.75+self.vel);
             }
         }
         //let dir = Vec2::from_angle(self.rot);
@@ -156,14 +233,14 @@ impl Agent {
         self.pos -= *collision_normal * penetration.abs() * self.vel * dt * 0.3;
     }
 
-    pub fn reset_detections(&mut self) {
+/*     pub fn reset_detections(&mut self) {
         self.enemy = Detection::new_empty();
     }
 
     pub fn update_detection(&mut self, target: &Detection) {
         self.enemy
             .add_closer(target.distance, target.angle, target.pos.clone());
-    }
+    } */
 
     pub fn add_energy(&mut self, e: f32) {
         self.eng += e;
@@ -193,7 +270,7 @@ impl AgentsBox {
 
     pub fn add_agent(&mut self, mut agent: Agent, physics_world: &mut World) -> u64 {
         let key: u64 = thread_rng().gen::<u64>();
-        let handle = physics_world.add_circle_body(&agent.pos, agent.size);
+        let handle = physics_world.add_circle_body(&agent.pos, agent.size, Some(agent.vision_range));
         agent.physics_handle = Some(handle);
         self.agents.insert(key, agent);
         return key;
@@ -218,4 +295,9 @@ impl AgentsBox {
     pub fn count(&self) -> usize {
         return self.agents.len();
     }
+}
+
+pub struct Detected {
+    pub target_handle: RigidBodyHandle,
+    pub dist: f32,
 }

@@ -164,7 +164,7 @@ impl UISystem {
     ) {
         if self.state.performance {
             egui::Window::new("Monitor")
-                .default_pos((5.0, 100.0))
+                .default_pos((5.0, 5.0))
                 .default_width(125.0)
                 .show(egui_ctx, |ui| {
                     ui.label(format!("DELTA: {}ms", (delta * 1000.0).round()));
@@ -184,12 +184,23 @@ impl UISystem {
         if self.state.inspect {
             let rot = agent.rot;
             let size = agent.size;
+            let tg_pos = agent.enemy_position;
+            let pos = agent.pos;
             egui::Window::new("Inspector")
-                .default_pos((5.0, 200.0))
-                .default_width(125.0)
+                .default_pos((125.0, 5.0))
+                .default_width(175.0)
                 .show(egui_ctx, |ui| {
                     ui.label(format!("ROTATION: {}", ((rot * 10.0).round()) / 10.0));
                     ui.label(format!("SIZE: {}", size));
+                    ui.label(format!("POSITION: [X: {} | Y:{}]", pos.x.round(), pos.y.round()));
+                    match tg_pos {
+                        Some(target) => {
+                            ui.label(format!("ENEMY POS: [X: {} | Y:{}]", target.x.round(), target.y.round()));
+                        },
+                        None => {
+                            ui.label(format!("ENEMY POS: ---"));
+                        },
+                    }
                     ui.label(format!(
                         "ENERGY: {}/{}",
                         agent.eng.round(),
@@ -210,7 +221,7 @@ impl UISystem {
         if self.state.mouse {
             let (mouse_x, mouse_y) = mouse_position();
             egui::Window::new("Mouse")
-                .default_pos((5.0, 325.0))
+                .default_pos((300.0, 5.0))
                 .default_width(125.0)
                 .show(egui_ctx, |ui| {
                     ui.label(format!("X: {} | Y: {}", mouse_x.round(), mouse_y.round()));
@@ -303,7 +314,7 @@ impl UISystem {
     fn build_create_window(&self, egui_ctx: &Context, signals: &mut Signals) {
         if self.state.create {
             egui::Window::new("Creator")
-                .default_pos((5.0, 450.0))
+                .default_pos((425.0, 5.0))
                 .default_width(125.0)
                 .show(egui_ctx, |ui| {
                     ui.horizontal(|head| {

@@ -103,7 +103,7 @@ impl Simulation {
         let dt = self.sim_state.dt;
         for (id, agent) in self.agents.get_iter_mut() {
             let uid = *id;
-            if !agent.update(dt) {
+            if !agent.update(dt, &self.world) {
                 match agent.physics_handle {
                     Some(handle) => {
                         self.world.remove_physics_object(handle);

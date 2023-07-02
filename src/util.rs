@@ -3,6 +3,7 @@
 use std::f32::consts::PI;
 
 use macroquad::{prelude::*, color};
+use nalgebra::*;
 use crate::consts::*;
 
 
@@ -52,7 +53,10 @@ pub fn wrap_around(v: &Vec2) -> Vec2 {
     return vr;
 }
 
-
+pub fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32> {
+    let iso = Isometry2::new(Vector2::new(posx, posy), rotation);
+    return iso;
+}
 //?         [[[SIGNALS]]]
 pub struct Signals {
     pub spawn_agent: bool,

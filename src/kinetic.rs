@@ -10,7 +10,7 @@ use parry2d::{math::*, query::Contact};
 
 use crate::agent::Agent;
 
-fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32> {
+pub fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32> {
     let iso = Isometry2::new(Vector2::new(posx, posy), rotation);
     return iso;
 }
@@ -112,6 +112,8 @@ pub enum DetectionTypes {
     Food,
     Rock,
 }
+
+
 
 pub struct Detection {
     pub distance: f32,
