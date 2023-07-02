@@ -109,7 +109,7 @@ impl World {
     fn reciv_events(&mut self) {
         while let Ok(collision_event) = self.collision_recv.try_recv() {
             match collision_event {
-                CollisionEvent::Stopped(collider1_hand, collider2_hand, CollisionEventFlags::REMOVED | CollisionEventFlags::SENSOR) => {
+                CollisionEvent::Stopped(collider1_hand, collider2_hand, CollisionEventFlags::REMOVED) => {
                     println!("REMOVED");
                     let mut agent_hand: RigidBodyHandle;
                     if self.is_collider_exist(collider1_hand) {
