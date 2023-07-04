@@ -36,10 +36,10 @@ pub fn control_camera(camera: &mut Camera2D, screen_ratio: f32) {
     }
     if is_key_pressed(KeyCode::Up) {
         //println!("target <x: {} | y: {}>", camera.target.x, camera.target.y);
-        camera.target.y += 50.0;
+        camera.target.y -= 50.0;
     }
     if is_key_pressed(KeyCode::Down) {
         //println!("target <x: {} | y: {}>", camera.target.x, camera.target.y);
-        camera.target.y -= 50.0;
+        camera.target.y += 50.0;
     }
 }

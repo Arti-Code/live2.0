@@ -49,7 +49,7 @@ impl UISystem {
                 sim_state.agents_num,
                 sim_state.physics_num,
             );
-            self.build_mouse_window(egui_ctx, camera2d);
+            self.build_debug_window(egui_ctx, camera2d);
             match agent {
                 Some(agent) => self.build_inspect_window(egui_ctx, agent),
                 None => {}
@@ -60,7 +60,7 @@ impl UISystem {
     }
 
     fn build_top_menu(&mut self, egui_ctx: &Context, sim_name: &str) {
-        egui::TopBottomPanel::top("top_panel").show(egui_ctx, |ui| {
+        egui::TopBottomPanel::top("top_panel").default_height(100.0).show(egui_ctx, |ui| {
             if !self.pointer_over {
                 self.pointer_over = ui.ui_contains_pointer();
             }
@@ -129,7 +129,7 @@ impl UISystem {
                     }
                     if ui
                         .button(
-                            RichText::new("Mouse")
+                            RichText::new("Debug Info")
                                 .strong()
                                 .color(Color32::from_gray(200)),
                         )
@@ -164,7 +164,7 @@ impl UISystem {
         physics_num: i32,
     ) {
         if self.state.performance {
-            egui::Window::new("Monitor")
+            egui::Window::new("MONITOR")
                 .default_pos((5.0, 5.0))
                 .default_width(125.0)
                 .show(egui_ctx, |ui| {
@@ -187,9 +187,9 @@ impl UISystem {
             let size = agent.size;
             let tg_pos = agent.enemy_position;
             let pos = agent.pos;
-            egui::Window::new("Inspector")
-                .default_pos((125.0, 5.0))
-                .default_width(175.0)
+            egui::Window::new("INSPECT")
+                .default_pos((175.0, 5.0))
+                .default_width(200.0)
                 .show(egui_ctx, |ui| {
                     ui.label(format!("ROTATION: {}", ((rot * 10.0).round()) / 10.0));
                     ui.label(format!("SIZE: {}", size));
@@ -218,19 +218,20 @@ impl UISystem {
         }
     }
 
-    fn build_mouse_window(&self, egui_ctx: &Context, camera2d: &Camera2D) {
+    fn build_debug_window(&self, egui_ctx: &Context, camera2d: &Camera2D) {
         if self.state.mouse {
             let (mouse_x, mouse_y) = mouse_position();
             egui::Window::new("DEBUG INFO")
-                .default_pos((300.0, 5.0))
-                .default_width(150.0)
+                .default_pos((375.0, 5.0))
+                .default_width(175.0)
                 .show(egui_ctx, |ui| {
-                    ui.label(format!("MOUSE [X: {} | Y: {}]", mouse_x.round(), mouse_y.round()));
+                    ui.label(RichText::new("MOUSE").strong());
+                    ui.label(format!("coords [x: {} | y: {}]", mouse_x.round(), mouse_y.round()));
                     ui.separator();
                     ui.label(RichText::new("CAMERA").strong());
                     ui.label(format!("target [x:{} | Y:{}]", camera2d.target.x.round(), camera2d.target.y.round()));
                     ui.label(format!("offset [x:{} | Y:{}]", camera2d.offset.x.round(), camera2d.offset.y.round()));
-                    ui.label(format!("zoom [x:{} | Y:{}]", camera2d.zoom.x.round(), camera2d.zoom.y.round()));
+                    ui.label(format!("zoom [x:{} | Y:{}]", (camera2d.zoom.x*10000.).round()/10., (camera2d.zoom.y*10000.).round()/10.));
                     ui.label(format!("rotation: {}", camera2d.rotation.round()));
                 });
         }
@@ -238,7 +239,7 @@ impl UISystem {
 
     fn build_quit_window(&mut self, egui_ctx: &Context) {
         if self.state.quit {
-            egui::Window::new("Quit")
+            egui::Window::new("QUIT")
                 .default_pos((SCREEN_WIDTH / 2.0 - 65.0, SCREEN_HEIGHT / 4.0))
                 .default_width(125.0)
                 .show(egui_ctx, |ui| {
@@ -268,7 +269,7 @@ impl UISystem {
     fn build_new_sim_window(&mut self, egui_ctx: &Context, signals: &mut Signals) {
         if self.state.new_sim {
             let mut sim_name: String = String::new();
-            egui::Window::new("New Simulation")
+            egui::Window::new("NEW SIMULATION")
                 .default_pos((SCREEN_WIDTH / 2.0 - 65.0, SCREEN_HEIGHT / 4.0))
                 .default_width(125.0)
                 .show(egui_ctx, |ui| {
@@ -320,17 +321,17 @@ impl UISystem {
 
     fn build_create_window(&self, egui_ctx: &Context, signals: &mut Signals) {
         if self.state.create {
-            egui::Window::new("Creator")
-                .default_pos((450.0, 5.0))
+            egui::Window::new("CREATE")
+                .default_pos((600.0, 5.0))
                 .default_width(125.0)
                 .show(egui_ctx, |ui| {
                     ui.horizontal(|head| {
-                        head.heading("Spawn new creature");
+                        head.heading("Create new creature");
                     });
                     ui.horizontal(|mid| {
                         mid.style_mut().visuals.extreme_bg_color = Color32::BLUE;
                         if mid
-                            .button(RichText::new("SPAWN").strong().color(Color32::WHITE))
+                            .button(RichText::new("CREATE").strong().color(Color32::WHITE))
                             .clicked()
                         {
                             //self.state.create = false;

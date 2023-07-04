@@ -7,7 +7,7 @@ use std::collections::{HashSet, HashMap};
 use std::f32::consts::PI;
 use std::thread::sleep;
 use std::time::Duration;
-
+use crate::util::*;
 
 
 pub struct World {
@@ -110,7 +110,7 @@ impl World {
         while let Ok(collision_event) = self.collision_recv.try_recv() {
             match collision_event {
                 CollisionEvent::Stopped(collider1_hand, collider2_hand, CollisionEventFlags::REMOVED) => {
-                    println!("REMOVED");
+                    //println!("REMOVED");
                     let mut agent_hand: RigidBodyHandle;
                     if self.is_collider_exist(collider1_hand) {
                         if self.is_collider_sensor(collider1_hand) {
@@ -126,7 +126,7 @@ impl World {
                     }
                 },
                 CollisionEvent::Started(c1, c2, CollisionEventFlags::SENSOR) => {
-                    println!("DETECTION");
+                    //println!("DETECTION");
                     let mut agent_hand: RigidBodyHandle; 
                     let mut target_hand: RigidBodyHandle; 
                     if self.is_collider_sensor(c1) {
@@ -140,8 +140,8 @@ impl World {
                     }
                     let target = self.rigid_bodies.get(target_hand).unwrap();
                     let agent = self.rigid_bodies.get(agent_hand).unwrap();
-                    let pos1 = self.matric_to_vec2(agent.position().translation);
-                    let pos2 = self.matric_to_vec2(target.position().translation);
+                    let pos1 = matric_to_vec2(agent.position().translation);
+                    let pos2 = matric_to_vec2(target.position().translation);
                     let new_dist = pos1.distance(pos2);
                     match self.detections.get(&agent_hand) {
                         Some((target, dist)) => {
@@ -159,7 +159,7 @@ impl World {
                     }
                 },
                 CollisionEvent::Stopped(c1, c2, CollisionEventFlags::SENSOR) => {
-                    println!("CONTACT LOST");
+                    //println!("CONTACT LOST");
                     let mut agent_hand: RigidBodyHandle; 
                     if self.is_collider_sensor(c1) {
                         agent_hand = self.get_object_handle_from_collider(c1).unwrap();
@@ -170,9 +170,6 @@ impl World {
                     }
                 },
                 _ => {}
-                //CollisionEvent::Stopped(c1, c2, _) => {
-                    //println!("SEPARATION");
-                //}
             }
         }
     }
@@ -245,7 +242,7 @@ impl World {
         }
     }
 
-    pub fn get_contacts2(&self, agent_body_handle: RigidBodyHandle) -> Option<RigidBodyHandle> {
+    pub fn get_contacts(&self, agent_body_handle: RigidBodyHandle) -> Option<RigidBodyHandle> {
         let target = self.detections.get(&agent_body_handle);
         match target {
             Some((tg, dst)) => {
@@ -255,11 +252,6 @@ impl World {
                 return None;
             }
         }
-    }
-
-    fn matric_to_vec2(&self, translation: Translation<Real>) -> Vec2 {
-        let v = Vec2::new(translation.x, translation.y);
-        return v;
     }
 
     fn get_body_handle_from_collider(&self, collider_handle: ColliderHandle) -> Option<RigidBodyHandle> {
@@ -282,11 +274,10 @@ impl World {
         }
     }
 
-    pub fn get_contacts(&self, agent_body_handle: RigidBodyHandle) -> Option<(f32, RigidBodyHandle)> {
-        let mut contacts_norm: Vec<Vec2> = vec![];
+    pub fn get_closesd_agent(&self, agent_body_handle: RigidBodyHandle) -> Option<RigidBodyHandle> {
         let rb = self.rigid_bodies.get(agent_body_handle).unwrap();
-        let pos1 = Vec2::new(rb.position().translation.x, rb.position().translation.y);
-        let mut dist: f32 = f32::INFINITY;
+        let pos1 = matric_to_vec2(rb.position().translation);
+        let mut dist = f32::INFINITY;
         let mut target: RigidBodyHandle = RigidBodyHandle::invalid();
         for c in rb.colliders() {
             let collider = self.colliders.get(*c).unwrap();
@@ -294,30 +285,27 @@ impl World {
                 continue;
             }
             let filter = QueryFilter { 
-                flags: QueryFilterFlags::ONLY_KINEMATIC, 
+                flags: QueryFilterFlags::ONLY_DYNAMIC | QueryFilterFlags::EXCLUDE_SENSORS, 
                 groups: None, 
                 exclude_collider: Some(*c), 
                 exclude_rigid_body: Some(agent_body_handle), 
                 ..Default::default()
             };
             self.query_pipeline.intersections_with_shape(&self.rigid_bodies, &self.colliders, rb.position(), collider.shape(), filter, |collided| {
-                println!("***");
-                let col2 = self.colliders.get(collided).unwrap();
-                let rb2_handle = col2.parent().unwrap();
-                let rb2 = self.rigid_bodies.get(rb2_handle).unwrap();
-                let pos2 = Vec2::new(rb2.position().translation.x, rb2.position().translation.y);
-                let new_dist = pos2.distance(pos1);
-                if new_dist < dist {
-                    dist = new_dist;
-                    target = rb2_handle;
+                    let rb2_handle = self.get_body_handle_from_collider(collided).unwrap();
+                    let rb2 = self.rigid_bodies.get(rb2_handle).unwrap();
+                    let pos2 = matric_to_vec2(rb2.position().translation);
+                    let new_dist = pos1.distance(pos2);
+                    if new_dist < dist {
+                        dist = new_dist;
+                        target = rb2_handle;
+                    }
+                    return true;
                 }
-                return true;
-            });
-            //collider.shape().
-            //self.query_pipeline.cast_shape(&self.rigid_bodies, &self.colliders, rb.position(), shape_vel, shape, max_toi, stop_at_penetration, filter)
+            );
         }
         if dist < f32::INFINITY {
-            return  Some((dist, target));
+            return  Some(target);
         } else {
             return None;
         }

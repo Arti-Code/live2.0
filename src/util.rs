@@ -4,6 +4,7 @@ use std::f32::consts::PI;
 
 use macroquad::{prelude::*, color};
 use nalgebra::*;
+use parry2d::math::Real;
 use crate::consts::*;
 
 
@@ -57,6 +58,11 @@ pub fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2
     let iso = Isometry2::new(Vector2::new(posx, posy), rotation);
     return iso;
 }
+
+pub fn matric_to_vec2(translation: Translation<Real, 2>) -> Vec2 {
+    return Vec2::new(translation.x, translation.y);
+}
+
 //?         [[[SIGNALS]]]
 pub struct Signals {
     pub spawn_agent: bool,
