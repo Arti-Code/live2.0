@@ -103,23 +103,42 @@ impl Agent {
         self.draw_target();
         draw_circle_lines(x0, y0, self.size, 2.0, self.color);
         draw_circle(x0, y0, (self.size / 2.0) * pulse.abs(), self.color);
-        draw_line(x1, y1, x2, y2, 1.0, self.color);
+        self.draw_front();
+        //draw_line(x1, y1, x2, y2, 1.0, self.color);
         //draw_text(&self.key.to_string(), x0-80.0, y0-self.size*2.0, 20.0, WHITE);
         if field_of_view {
             draw_circle_lines(x0, y0, self.vision_range, 0.75, GRAY);
         }
     }
 
+    fn draw_front(&self) {
+        let dir = Vec2::from_angle(self.rot);
+        let v0l = Vec2::from_angle(self.rot-PI/2.0)*self.size;
+        let v0r = Vec2::from_angle(self.rot+PI/2.0)*self.size;
+        let x0l = self.pos.x+v0l.x;
+        let y0l = self.pos.y+v0l.y;
+        let x0r = self.pos.x+v0r.x;
+        let y0r = self.pos.y+v0r.y;
+        let x2 = self.pos.x + dir.x * self.size * 2.0;
+        let y2 = self.pos.y + dir.y * self.size * 2.0;
+        draw_line(x0l, y0l, x2, y2, 2.0, self.color);
+        draw_line(x0r, y0r, x2, y2, 2.0, self.color);        
+    }
+
     fn draw_target(&self) {
         //if !self.enemy.is_none() {
         if let Some(rb) = self.enemy {
             if let Some(enemy_position) = self.enemy_position {
-                let x0 = self.pos.x;
-                let y0 = self.pos.y;
-                //let rb_handle = rb.target_handle;
+                let v0l = Vec2::from_angle(self.rot-PI/2.0)*self.size;
+                let v0r = Vec2::from_angle(self.rot+PI/2.0)*self.size;
+                let x0l = self.pos.x+v0l.x;
+                let y0l = self.pos.y+v0l.y;
+                let x0r = self.pos.x+v0r.x;
+                let y0r = self.pos.y+v0r.y;
                 let x1 = enemy_position.x;
                 let y1 = enemy_position.y;
-                draw_line(x0, y0, x1, y1, 0.5, self.color);
+                draw_line(x0l, y0l, x1, y1, 0.75, self.color);
+                draw_line(x0r, y0r, x1, y1, 0.75, self.color);
             }
         }
     }
