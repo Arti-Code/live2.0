@@ -128,7 +128,6 @@ impl Agent {
         match self.physics_handle {
             Some(handle) => {
                 self.update_enemy_position(physics);
-                //physics.get_contacts(handle);
                 let physics_data = physics.get_physics_data(handle);
                 self.pos = physics_data.position;
                 self.rot = physics_data.rotation;
@@ -155,7 +154,6 @@ impl Agent {
                             out_of_edge = true;
                         }
                         if out_of_edge {
-                            //let rot = body.rotation();
                             body.set_position(make_isometry(raw_pos.x, raw_pos.y, self.rot), true);
                         }
                     }
@@ -183,13 +181,10 @@ impl Agent {
         if self.analize_timer.update(dt) {
             match self.physics_handle {
                 Some(handle) => {
-                    //if let Some((tg)) = physics.get_contacts(handle){
                     if let Some(tg) = physics.get_closesd_agent(handle) {
-                        //self.detected = Some(Detected { dist: dist, target_handle: tg });
                         self.enemy = Some(tg);
                         self.update_enemy_position(physics);
                     } else {
-                        //self.detected = None;
                         self.enemy = None;
                         self.enemy_position = None;
                     }
