@@ -186,6 +186,7 @@ impl UISystem {
             let rot = agent.rot;
             let size = agent.size;
             let tg_pos = agent.enemy_position;
+            let tg_ang = agent.enemy_dir;
             let pos = agent.pos;
             egui::Window::new("INSPECT")
                 .default_pos((175.0, 5.0))
@@ -194,14 +195,23 @@ impl UISystem {
                     ui.label(format!("ROTATION: {}", ((rot * 10.0).round()) / 10.0));
                     ui.label(format!("SIZE: {}", size));
                     ui.label(format!("POSITION: [X: {} | Y:{}]", pos.x.round(), pos.y.round()));
-                    match tg_pos {
-                        Some(target) => {
-                            ui.label(format!("ENEMY POS: [X: {} | Y:{}]", target.x.round(), target.y.round()));
+                    ui.separator();
+                    ui.label(RichText::new("ENEMY").strong());
+                    match (tg_pos, tg_ang) {
+                        (Some(target), Some(ang)) => {
+                            ui.label(format!("enemy pos: [x: {} | y:{}]", target.x.round(), target.y.round()));
+                            ui.label(format!("angle to enemy: [{}]", ang.round()));
                         },
-                        None => {
-                            ui.label(format!("ENEMY POS: ---"));
+                        (None, None) => {
+                            ui.label(format!("enemy pos: ---"));
+                            ui.label(format!("angle to enemy: ---"));
                         },
+                        (_, _) => {
+                            ui.label(format!("enemy pos: ---"));
+                            ui.label(format!("angle to enemy: ---"));
+                        }
                     }
+                    ui.separator();
                     ui.label(format!(
                         "ENERGY: {}/{}",
                         agent.eng.round(),

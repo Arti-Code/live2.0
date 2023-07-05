@@ -42,6 +42,7 @@ pub struct Agent {
     pub detected: Option<Detected>,
     pub enemy: Option<RigidBodyHandle>,
     pub enemy_position: Option<Vec2>,
+    pub enemy_dir: Option<f32>,
     pub physics_handle: Option<RigidBodyHandle>,
 }
 
@@ -75,6 +76,7 @@ impl Agent {
             detected: None,
             enemy: None,
             enemy_position: None,
+            enemy_dir: None,
             //enemy: Detection::new_empty(),
             physics_handle: None,
         }
@@ -187,12 +189,17 @@ impl Agent {
         if let Some(rb) = self.enemy {
             if let Some(enemy_position) = physics.get_object_position(rb) {
                 self.enemy_position = Some(enemy_position);
+                let rel_pos = enemy_position - self.pos;
+                let enemy_dir = rel_pos.angle_between(Vec2::from_angle(self.rot));
+                self.enemy_dir = Some(enemy_dir);
             } else { 
                     self.enemy = None;
                     self.enemy_position = None;
+                    self.enemy_dir = None;
             }
         } else if self.enemy_position.is_some() {
             self.enemy_position = None;
+            self.enemy_dir = None;
         }
     }
 
@@ -206,6 +213,7 @@ impl Agent {
                     } else {
                         self.enemy = None;
                         self.enemy_position = None;
+                        self.enemy_dir = None;
                     }
                 },
                 None => {},
