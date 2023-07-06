@@ -14,6 +14,7 @@ mod world;
 mod source;
 mod object;
 mod camera;
+mod element;
 
 use std::{time, thread};
 use macroquad::miniquad::conf::Icon;

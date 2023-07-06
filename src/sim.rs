@@ -342,8 +342,8 @@ impl Default for SimConfig {
             agent_speed: AGENT_SPEED,
             agent_rotation: AGENT_ROTATION,
             agent_vision_range: AGENT_VISION_RANGE,
-            sources_init_num: SOURCES_NUM,
-            sources_min_num: SOURCES_NUM_MIN,
+            sources_init_num: 0,
+            sources_min_num: 0,
         }
     }
 }

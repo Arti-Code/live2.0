@@ -1,12 +1,11 @@
 #![allow(unused)]
-use std::collections::hash_map::Iter;
-use std::collections::hash_map::IterMut;
+use std::collections::hash_map::{Iter, IterMut};
+//use std::collections::hash_map::IterMut;
 use std::collections::HashMap;
 use std::f32::consts::PI;
 
 use macroquad::{color, prelude::*};
 use nalgebra::vector;
-//use parry2d::shape::*;
 use crate::consts::*;
 use crate::kinetic::make_isometry;
 use crate::kinetic::{contact_circles, Detection};
@@ -254,19 +253,6 @@ impl Agent {
         return self.alife;
     }
 
-/*     pub fn update_collision(&mut self, collision_normal: &Vec2, penetration: f32, dt: f32) {
-        self.pos -= *collision_normal * penetration.abs() * self.vel * dt * 0.3;
-    } */
-
-/*     pub fn reset_detections(&mut self) {
-        self.enemy = Detection::new_empty();
-    }
-
-    pub fn update_detection(&mut self, target: &Detection) {
-        self.enemy
-            .add_closer(target.distance, target.angle, target.pos.clone());
-    } */
-
     pub fn add_energy(&mut self, e: f32) {
         self.eng += e;
         if self.eng > self.max_eng {
@@ -295,7 +281,6 @@ impl AgentsBox {
     }
 
     pub fn add_agent(&mut self, mut agent: Agent, physics_world: &mut World) -> u64 {
-        //let key: u64 = thread_rng().gen::<u64>();
         let key = agent.key;
         let handle = physics_world.add_circle_body(key,&agent.pos, agent.size, Some(agent.vision_range));
         agent.physics_handle = Some(handle);

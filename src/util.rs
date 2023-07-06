@@ -63,6 +63,25 @@ pub fn matric_to_vec2(translation: Translation<Real, 2>) -> Vec2 {
     return Vec2::new(translation.x, translation.y);
 }
 
+pub fn map_polygon(n: usize, r: f32, dev: f32) -> (Vec<Vec2>, Vec<Point2<f32>>) {
+    let mut points: Vec<Vec2> = vec![];
+    let mut opoints: Vec<Point2<f32>> = vec![];
+    let s = 2.0*PI/(n as f32);
+    let mut a = 0.0;
+    for _ in 0..n {
+        let d = rand::gen_range(-dev, dev);
+        let step = s + s*d;
+        a += step;
+        let x = a.sin()*r;
+        let y = a.cos()*r;
+        let v = Vec2::new(x, y);
+        let p = Point2::new(x, y);
+        points.push(v);
+        opoints.push(p);
+    }
+    return (points, opoints);
+}
+
 //?         [[[SIGNALS]]]
 pub struct Signals {
     pub spawn_agent: bool,
