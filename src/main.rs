@@ -1,5 +1,4 @@
-
-//#![allow(unused)]
+#![allow(unused)]
 
 mod sim;
 mod consts;

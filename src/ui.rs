@@ -69,7 +69,7 @@ impl UISystem {
                 ui.add_space(5.0);
                 ui.separator();
                 ui.add_space(5.0);
-                egui::menu::menu_button(ui, RichText::new("Simulation").strong(), |ui| {
+                egui::menu::menu_button(ui, RichText::new("SIMULATION").strong(), |ui| {
                     if ui
                         .button(
                             RichText::new("New Simulation")
@@ -106,12 +106,12 @@ impl UISystem {
                 ui.add_space(10.0);
                 ui.separator();
                 ui.add_space(10.0);
-                egui::menu::menu_button(ui, RichText::new("Tools").strong(), |ui| {
+                egui::menu::menu_button(ui, RichText::new("TOOLS").strong(), |ui| {
                     if ui
                         .button(
                             RichText::new("Monitor")
                                 .strong()
-                                .color(Color32::from_gray(200)),
+                                .color(Color32::WHITE),
                         )
                         .clicked()
                     {
@@ -121,7 +121,7 @@ impl UISystem {
                         .button(
                             RichText::new("Inspector")
                                 .strong()
-                                .color(Color32::from_gray(200)),
+                                .color(Color32::WHITE),
                         )
                         .clicked()
                     {
@@ -131,7 +131,7 @@ impl UISystem {
                         .button(
                             RichText::new("Debug Info")
                                 .strong()
-                                .color(Color32::from_gray(200)),
+                                .color(Color32::WHITE),
                         )
                         .clicked()
                     {
@@ -139,9 +139,9 @@ impl UISystem {
                     }
                     if ui
                         .button(
-                            RichText::new("Creator")
+                            RichText::new("Create")
                                 .strong()
-                                .color(Color32::from_gray(200)),
+                                .color(Color32::WHITE),
                         )
                         .clicked()
                     {
@@ -150,6 +150,29 @@ impl UISystem {
                 });
                 ui.add_space(10.0);
                 ui.separator();
+                ui.add_space(10.0);
+                egui::menu::menu_button(ui, RichText::new("ABOUT").strong(), |ui| {
+                    if ui
+                        .button(
+                            RichText::new("Credits")
+                                .strong()
+                                .color(Color32::WHITE),
+                        )
+                        .clicked()
+                    {
+                        self.state.credits = !self.state.credits;
+                    }
+                    if ui
+                        .button(
+                            RichText::new("Documentation")
+                                .strong()
+                                .color(Color32::WHITE),
+                        )
+                        .clicked()
+                    {
+                        self.state.docs = !self.state.docs;
+                    }
+                });
             });
         });
     }
@@ -362,6 +385,7 @@ impl UISystem {
 
 //?         [[[UISTATE]]]
 pub struct UIState {
+    pub new_sim_name: String,
     pub performance: bool,
     pub inspect: bool,
     pub mouse: bool,
@@ -369,12 +393,14 @@ pub struct UIState {
     pub quit: bool,
     pub agents_num: i32,
     pub new_sim: bool,
-    pub new_sim_name: String,
+    pub credits: bool,
+    pub docs: bool,
 }
 
 impl UIState {
     pub fn new() -> Self {
         Self {
+            new_sim_name: String::new(),
             performance: false,
             inspect: false,
             mouse: false,
@@ -382,7 +408,8 @@ impl UIState {
             quit: false,
             agents_num: 0,
             new_sim: false,
-            new_sim_name: String::new(),
+            credits: false,
+            docs: false,
         }
     }
 }
