@@ -25,16 +25,17 @@ pub struct World {
     multibody_joint_set: MultibodyJointSet,
     ccd_solver: CCDSolver,
     physics_hooks: (),
-    event_handler: ChannelEventCollector,
-    collision_recv: Receiver<CollisionEvent>,
+    event_handler: (),
+    //event_handler: ChannelEventCollector,
+    //collision_recv: Receiver<CollisionEvent>,
     pub detections: HashMap<RigidBodyHandle, (RigidBodyHandle, f32)>,
 }
 
 impl World {
     pub fn new() -> Self {
-        let (collision_send, collision_recv) = crossbeam::channel::unbounded();
-        let (contact_force_send, contact_force_recv) = crossbeam::channel::unbounded();
-        let event_handler = ChannelEventCollector::new(collision_send, contact_force_send);
+        //let (collision_send, collision_recv) = crossbeam::channel::unbounded();
+        //let (contact_force_send, contact_force_recv) = crossbeam::channel::unbounded();
+        //let event_handler = ChannelEventCollector::new(collision_send, contact_force_send);
         Self {
             rigid_bodies: RigidBodySet::new(),
             colliders: ColliderSet::new(),
@@ -49,18 +50,15 @@ impl World {
             multibody_joint_set: MultibodyJointSet::new(),
             ccd_solver: CCDSolver::new(),
             physics_hooks: (),
-            event_handler: event_handler,
-            collision_recv: collision_recv,
+            event_handler: (),
+            //event_handler: event_handler,
+            //collision_recv: collision_recv,
             detections: HashMap::new(),
         }
     }
 
     fn update_intersections(&mut self) {
         self.query_pipeline.update(&self.rigid_bodies, &self.colliders);
-    }
-
-    pub fn check_intersections(&self) {
-        
     }
 
     pub fn add_circle_body(&mut self, key: u64, position: &Vec2, radius: f32, detection_range: Option<f32>) -> RigidBodyHandle {
@@ -97,17 +95,6 @@ impl World {
         return rb_handle;
     }
 
-    pub fn add_box(&mut self, key: u64, position: &Vec2, side_size: f32) -> RigidBodyHandle {
-        let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
-        let poly = RigidBodyBuilder::dynamic().position(iso).user_data(key as u128).build();
-        let mut collider = ColliderBuilder::cuboid(side_size, side_size)
-            .active_collision_types(ActiveCollisionTypes::default())
-            .active_events(ActiveEvents::COLLISION_EVENTS).build();
-        let rb_handle = self.rigid_bodies.insert(poly);
-        let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
-        return rb_handle;
-    }
-
     fn is_collider_exist(&self, collider_handle: ColliderHandle) -> bool {
         let collider = self.colliders.get(collider_handle);
         match collider {
@@ -133,74 +120,6 @@ impl World {
             },
             Some(collider) => {
                 return collider.parent();
-            }
-        }
-    }
-
-    fn reciv_events(&mut self) {
-        while let Ok(collision_event) = self.collision_recv.try_recv() {
-            match collision_event {
-                CollisionEvent::Stopped(collider1_hand, collider2_hand, CollisionEventFlags::REMOVED) => {
-                    //println!("REMOVED");
-                    let mut agent_hand: RigidBodyHandle;
-                    if self.is_collider_exist(collider1_hand) {
-                        if self.is_collider_sensor(collider1_hand) {
-                            agent_hand = self.get_body_handle_from_collider(collider1_hand).unwrap();
-                            self.detections.remove_entry(&agent_hand);
-                        }
-                    }
-                    if self.is_collider_exist(collider2_hand) {
-                        if self.is_collider_sensor(collider2_hand) {
-                            agent_hand = self.get_body_handle_from_collider(collider2_hand).unwrap();
-                            self.detections.remove_entry(&agent_hand);
-                        }   
-                    }
-                },
-                CollisionEvent::Started(c1, c2, CollisionEventFlags::SENSOR) => {
-                    //println!("DETECTION");
-                    let mut agent_hand: RigidBodyHandle; 
-                    let mut target_hand: RigidBodyHandle; 
-                    if self.is_collider_sensor(c1) {
-                        agent_hand = self.get_object_handle_from_collider(c1).unwrap();
-                        target_hand = self.get_object_handle_from_collider(c2).unwrap();
-                    } else if self.is_collider_sensor(c2) {
-                        agent_hand = self.get_object_handle_from_collider(c2).unwrap();
-                        target_hand = self.get_object_handle_from_collider(c1).unwrap();
-                    } else {
-                        return;
-                    }
-                    let target = self.rigid_bodies.get(target_hand).unwrap();
-                    let agent = self.rigid_bodies.get(agent_hand).unwrap();
-                    let pos1 = matric_to_vec2(agent.position().translation);
-                    let pos2 = matric_to_vec2(target.position().translation);
-                    let new_dist = pos1.distance(pos2);
-                    match self.detections.get(&agent_hand) {
-                        Some((target, dist)) => {
-                            //let (actual_target, actual_dist) = self.detections.get(&agent_hand).unwrap();
-                            let distance = *dist;
-                            let new_distance = new_dist;
-                            if new_distance < distance {
-                                _ = self.detections.remove_entry(&agent_hand);
-                                self.detections.insert(agent_hand, (target_hand, new_distance));
-                            }
-                        },
-                        None => {
-                            self.detections.insert(agent_hand, (target_hand, new_dist));
-                        }
-                    }
-                },
-                CollisionEvent::Stopped(c1, c2, CollisionEventFlags::SENSOR) => {
-                    //println!("CONTACT LOST");
-                    let mut agent_hand: RigidBodyHandle; 
-                    if self.is_collider_sensor(c1) {
-                        agent_hand = self.get_object_handle_from_collider(c1).unwrap();
-                        self.detections.remove_entry(&agent_hand);
-                    } else if self.is_collider_sensor(c2) {
-                        agent_hand = self.get_object_handle_from_collider(c2).unwrap();
-                        self.detections.remove_entry(&agent_hand);
-                    }
-                },
-                _ => {}
             }
         }
     }
@@ -237,7 +156,6 @@ impl World {
             &self.physics_hooks,
             &self.event_handler,
         );
-        self.reciv_events();
     }
 
     fn iso_to_vec2_rot(&self, isometry: &Isometry<Real>) -> (Vec2, f32) {
