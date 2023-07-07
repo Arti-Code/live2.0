@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::f32::consts::PI;
 
 use macroquad::{color, prelude::*};
-use nalgebra::{vector, OPoint};
+use nalgebra::{vector, OPoint, Point2};
 use crate::consts::*;
 use crate::kinetic::make_isometry;
 use crate::kinetic::{contact_circles, Detection};
@@ -15,9 +15,9 @@ use rapier2d::geometry::*;
 use rapier2d::prelude::RigidBodyHandle;
 
 pub trait DynamicElement {
-    fn create() -> Self;
+    //fn create() -> Self;
     fn draw(&self);
-    fn update(&mut self, dt: f32, physics: &World);
+    fn update(&mut self, dt: f32, physics: &mut World);
 }
 
 
@@ -29,16 +29,20 @@ pub struct Asteroid {
     pub ang_vel: f32,
     pub size: f32,
     pub color: color::Color,
+    pub points: Vec<Vec2>,
+    pub points2: Vec<Point2<f32>>,
     pub shape: ConvexPolygon,
     pub physics_handle: Option<RigidBodyHandle>,
+    pub kin_eng: f32,
 }
 
-
-impl DynamicElement for Asteroid {
-    fn create() -> Self {
+impl Asteroid {
+    pub fn new() -> Self {
         let size = rand::gen_range(ASTER_SIZE_MIN, ASTER_SIZE_MAX);
-        let n = size / 6;
-        let (points, opoints) = map_polygon(n as usize, size as f32, 0.1);
+        //let n = size / 4;
+        let n = rand::gen_range(8, 16);
+        let points = map_polygon(n as usize, size as f32, 0.5);
+        let points2 = vec2_to_point2_collection(&points);
         Self {
             key: thread_rng().gen::<u64>(),
             pos: random_position(WORLD_W, WORLD_H),
@@ -47,14 +51,137 @@ impl DynamicElement for Asteroid {
             ang_vel: rand::gen_range(-1.0, 1.0),
             size: (size as f32),
             color: random_color(),
-            shape: ConvexPolygon::from_convex_polyline(opoints).unwrap(),
+            points: points,
+            points2: points2.clone(),
+            shape: ConvexPolygon::from_convex_polyline(points2).unwrap(),
             physics_handle: None,
-        }
-    }
-    fn draw(&self) {
-
-    }
-    fn update(&mut self, dt: f32, physics: &World) {
-
+            kin_eng: 0.0,
+        }        
     }
 }
+
+impl DynamicElement for Asteroid {
+    fn draw(&self) {
+        let x0 = self.pos.x;
+        let y0 = self.pos.y;
+        let l = self.points.len();
+        for i in 1..=l {
+            let mut v1: &Vec2;
+            let mut v2: &Vec2;
+            if i == l {
+                v1 = self.points.get(i-1).unwrap();
+                v2 = self.points.get(0).unwrap();    
+            } else {
+                v1 = self.points.get(i-1).unwrap();
+                v2 = self.points.get(i).unwrap();    
+            }
+            //let v1n = v1.normalize_or_zero();
+            let v1r = v1.rotate(Vec2::from_angle(self.rot));
+            let v2r = v2.rotate(Vec2::from_angle(self.rot));
+            draw_line(v1r.x+x0, v1r.y+y0, v2r.x+x0, v2r.y+y0, 4.0, self.color);
+        }
+        draw_text(&(self.kin_eng/10000.0).round().to_string(), x0-18.0, y0, 16.0, WHITE);
+    }
+    fn update(&mut self, dt: f32, physics: &mut World) {
+        match self.physics_handle {
+            Some(handle) => {
+                let physics_data = physics.get_physics_data(handle);
+                self.pos = physics_data.position;
+                self.rot = physics_data.rotation;
+                self.kin_eng = physics_data.kin_eng.unwrap();
+                match physics.rigid_bodies.get_mut(handle) {
+                    Some(body) => {
+                        let dir = Vec2::from_angle(self.rot);
+                        let v = dir * self.vel;
+                        //body.set_linvel([v.x, v.y].into(), true);
+                        //body.set_angvel(self.ang_vel, true);
+                        let mut raw_pos = matric_to_vec2(body.position().translation);
+                        let mut out_of_edge = false;
+                        if raw_pos.x < 0.0 {
+                            raw_pos.x = WORLD_W-5.0;
+                            out_of_edge = true;
+                        } else if raw_pos.x > WORLD_W {
+                            raw_pos.x = 5.0;
+                            out_of_edge = true;
+                        }
+                        if raw_pos.y < 0.0 {
+                            raw_pos.y = WORLD_H - 5.0;
+                            out_of_edge = true;
+                        } else if raw_pos.y > WORLD_H {
+                            raw_pos.y = 5.0;
+                            out_of_edge = true;
+                        }
+                        if out_of_edge {
+                            body.set_position(make_isometry(raw_pos.x, raw_pos.y, self.rot), true);
+                        }
+                    },
+                    None => {}
+                }
+            },
+            None => {},
+        } 
+    }
+}
+
+
+
+pub struct DynamicCollector {
+    pub elements: HashMap<u64, Asteroid>,
+}
+
+impl DynamicCollector {
+    pub fn new() -> Self {
+        Self {
+            elements: HashMap::new(),
+        }
+    }
+
+    pub fn add_many_elements(&mut self, elements_num: usize, physics_world: &mut World) {
+        for _ in 0..elements_num {
+            let element = Asteroid::new();
+            _ = self.add_element(element, physics_world);
+        }
+    }
+
+    pub fn add_element(&mut self, mut element: Asteroid, physics_world: &mut World) -> u64 {
+        let key = element.key;
+        //let handle = physics_world.add_poly_body(key,&element.pos, element.points2.clone());
+        let handle = physics_world.add_poly_body(key,&element.pos, element.points2.clone());
+        element.physics_handle = Some(handle);
+        self.elements.insert(key, element);
+        return key;
+    }
+
+    pub fn get(&self, id: u64) -> Option<&Asteroid> {
+        return self.elements.get(&id);
+    }
+
+    pub fn remove(&mut self, id: u64) {
+        self.elements.remove(&id);
+    }
+
+    pub fn get_iter(&self) -> Iter<u64, Asteroid> {
+        return self.elements.iter();
+    }
+
+    pub fn get_iter_mut(&mut self) -> IterMut<u64, Asteroid> {
+        return self.elements.iter_mut();
+    }
+
+    pub fn count(&self) -> usize {
+        return self.elements.len();
+    }
+}
+
+/* pub struct PhysicsObjects<T> {
+    objects: Vec<T>,
+} 
+
+
+impl PhysicsObjects<T> {
+    pub fn new<T>() -> Self {
+        Self {
+            objects: vec![]
+        }
+    }
+} */

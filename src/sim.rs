@@ -3,12 +3,14 @@
 use crate::agent::*;
 use crate::camera::*;
 use crate::consts::*;
+use crate::element;
 use crate::kinetic::*;
 use crate::object::*;
 use crate::source::*;
 use crate::ui::*;
 use crate::util::Signals;
 use crate::world::*;
+use crate::element::*;
 use egui_macroquad;
 use macroquad::camera::Camera2D;
 use macroquad::prelude::*;
@@ -31,6 +33,7 @@ pub struct Simulation {
     pub selected: u64,
     pub mouse_state: MouseState,
     pub agents: AgentsBox,
+    pub elements: DynamicCollector,
 }
 
 struct CamConfig {
@@ -64,6 +67,7 @@ impl Simulation {
             select_phase: 0.0,
             mouse_state: MouseState { pos: Vec2::NAN },
             agents: AgentsBox::new(),
+            elements: DynamicCollector::new(),
             //sources: SourcesBox::new(),
         }
     }
@@ -75,6 +79,7 @@ impl Simulation {
         };
         self.world = World::new();
         self.agents.agents.clear();
+        self.elements.elements.clear();
         self.sim_time = 0.0;
         self.sim_state = SimState::new();
         self.sim_state.sim_name = String::from(&self.simulation_name);
@@ -87,8 +92,8 @@ impl Simulation {
 
     pub fn init(&mut self) {
         let agents_num = self.config.agents_init_num;
-        self.agents
-            .add_many_agents(agents_num as usize, &mut self.world);
+        self.agents.add_many_agents(agents_num as usize, &mut self.world);
+        self.elements.add_many_elements(ASTER_NUM, &mut self.world);
         //self.sources.add_many(48);
     }
 
@@ -116,12 +121,20 @@ impl Simulation {
         self.agents.agents.retain(|_, agent| agent.alife == true);
     }
 
+    fn update_elements(&mut self) {
+        self.sim_state.asteroids_num = self.elements.elements.len();
+        for (id, elem) in self.elements.get_iter_mut() {
+            elem.update(self.sim_state.dt, &mut self.world);
+        }
+    }
+
     pub fn update(&mut self) {
         self.signals_check();
         self.update_sim_state();
         self.check_agents_num();
         self.calc_selection_time();
         self.update_agents();
+        self.update_elements();
         self.world.step_physics();
     }
 
@@ -132,6 +145,7 @@ impl Simulation {
         draw_rectangle_lines(0.0, 0.0, self.world_size.x, self.world_size.y, 3.0, WHITE);
         self.draw_grid(50);
         self.draw_agents();
+        self.draw_elements();
     }
 
     fn draw_agents(&self) {
@@ -156,6 +170,12 @@ impl Simulation {
             }
             None => {}
         };
+    }
+
+    fn draw_elements(&self) {
+        for (id, element) in self.elements.get_iter() {
+            element.draw();
+        }
     }
 
     fn draw_grid(&self, cell_size: u32) {
@@ -235,6 +255,10 @@ impl Simulation {
         }
         if self.sim_state.sources_num < (self.config.sources_min_num as i32) {
             let source = Source::new();
+        }
+        if self.sim_state.asteroids_num < (ASTER_NUM) {
+            let asteroid = Asteroid::new();
+            self.elements.add_element(asteroid, &mut self.world);
         }
     }
 
@@ -375,6 +399,7 @@ pub struct SimState {
     pub sim_name: String,
     pub agents_num: i32,
     pub sources_num: i32,
+    pub asteroids_num: usize,
     pub physics_num: i32,
     pub sim_time: f64,
     pub fps: i32,
@@ -387,6 +412,7 @@ impl SimState {
             sim_name: String::new(),
             agents_num: 0,
             sources_num: 0,
+            asteroids_num: 0,
             physics_num: 0,
             sim_time: 0.0,
             fps: 0,

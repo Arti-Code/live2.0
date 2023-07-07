@@ -1,12 +1,13 @@
 use crossbeam::channel::{Receiver, Sender};
 use crossbeam::*;
 use macroquad::prelude::*;
-use nalgebra::{Complex, Isometry2, Unit};
+use nalgebra::{Complex, Isometry2, Unit, Point2};
 use rapier2d::{na::Vector2, prelude::*};
 use std::collections::{HashSet, HashMap};
 use std::f32::consts::PI;
 use std::thread::sleep;
 use std::time::Duration;
+use crate::consts::ASTER_SPEED;
 use crate::util::*;
 
 
@@ -74,6 +75,36 @@ impl World {
             let detector  = ColliderBuilder::ball(detection_range.unwrap()).sensor(true).build();
             _ = self.colliders.insert_with_parent(detector, rb_handle, &mut self.rigid_bodies);
         }
+        return rb_handle;
+    }
+
+    pub fn add_poly_body(&mut self, key: u64, position: &Vec2, points: Vec<Point2<f32>>) -> RigidBodyHandle {
+        let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
+        let poly = RigidBodyBuilder::dynamic().position(iso)
+            .linear_damping(0.0).angular_damping(0.0)
+            .can_sleep(false).user_data(key as u128).build();
+        let mut collider = ColliderBuilder::convex_polyline(points).unwrap()
+            .active_collision_types(ActiveCollisionTypes::default() | ActiveCollisionTypes::DYNAMIC_DYNAMIC)
+            .active_events(ActiveEvents::COLLISION_EVENTS)
+            .density(1.0).build();
+        let rb_handle = self.rigid_bodies.insert(poly);
+        let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
+        let obj = self.rigid_bodies.get_mut(rb_handle).unwrap();
+        //obj.add
+        let imp = Vector2::new(rand::gen_range(-1.0, 1.0), rand::gen_range(-1.0, 1.0)) * ASTER_SPEED;
+        //obj.apply_impulse(imp, true);
+        obj.set_linvel(imp, true);
+        return rb_handle;
+    }
+
+    pub fn add_box(&mut self, key: u64, position: &Vec2, side_size: f32) -> RigidBodyHandle {
+        let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
+        let poly = RigidBodyBuilder::dynamic().position(iso).user_data(key as u128).build();
+        let mut collider = ColliderBuilder::cuboid(side_size, side_size)
+            .active_collision_types(ActiveCollisionTypes::default())
+            .active_events(ActiveEvents::COLLISION_EVENTS).build();
+        let rb_handle = self.rigid_bodies.insert(poly);
+        let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
         return rb_handle;
     }
 
@@ -225,6 +256,7 @@ impl World {
         let data = PhysicsData {
             position: pos,
             rotation: rot,
+            kin_eng: Some(rb.kinetic_energy()),
         };
         return data;
     }
@@ -315,4 +347,5 @@ impl World {
 pub struct PhysicsData {
     pub position: Vec2,
     pub rotation: f32,
+    pub kin_eng: Option<f32>,
 }

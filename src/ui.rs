@@ -48,6 +48,7 @@ impl UISystem {
                 sim_state.sim_time,
                 sim_state.agents_num,
                 sim_state.physics_num,
+                sim_state.asteroids_num,
             );
             self.build_debug_window(egui_ctx, camera2d);
             match agent {
@@ -162,6 +163,7 @@ impl UISystem {
         time: f64,
         agents_num: i32,
         physics_num: i32,
+        asteroids_num: usize,
     ) {
         if self.state.performance {
             egui::Window::new("MONITOR")
@@ -175,6 +177,8 @@ impl UISystem {
                     ui.label(format!("TIME: {}", time.round()));
                     ui.separator();
                     ui.label(format!("AGENTS: {}", agents_num));
+                    ui.separator();
+                    ui.label(format!("ASTEROIDS: {}", asteroids_num));
                     ui.separator();
                     ui.label(format!("PHYSICS OBJECTS: {}", physics_num));
                 });
