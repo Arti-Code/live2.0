@@ -1,19 +1,18 @@
-use std::path::Path;
+//use std::path::Path;
 
-use egui::{self, Context, Style};
+use egui::{self, Context};
 use egui::{Color32, RichText};
-use egui_extras::image::RetainedImage;
+//use egui_extras::image::RetainedImage;
 use egui_macroquad;
-use image::open;
+//use image::open;
 use macroquad::prelude::*;
-use macroquad::ui::StyleBuilder;
+//use macroquad::ui::StyleBuilder;
 
 use crate::agent::Agent;
 use crate::consts::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::sim::*;
 use crate::{progress_bar::*, Signals};
 
-static V: Vec2 = Vec2::ZERO;
 
 pub struct UISystem {
     pub state: UIState,
@@ -282,7 +281,7 @@ impl UISystem {
 
     fn build_new_sim_window(&mut self, egui_ctx: &Context, signals: &mut Signals) {
         if self.state.new_sim {
-            let mut sim_name: String = String::new();
+            //let mut sim_name: String = String::new();
             egui::Window::new("NEW SIMULATION")
                 .default_pos((SCREEN_WIDTH / 2.0 - 65.0, SCREEN_HEIGHT / 4.0))
                 .default_width(125.0)

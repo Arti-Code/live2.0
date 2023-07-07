@@ -1,13 +1,12 @@
 #![allow(unused)]
 use std::collections::hash_map::{Iter, IterMut};
 use std::collections::HashMap;
-use std::f32::consts::PI;
+//use std::f32::consts::PI;
 
 use macroquad::{color, prelude::*};
-use nalgebra::{vector, OPoint, Point2};
+use nalgebra::{Point2};
 use crate::consts::*;
 use crate::kinetic::make_isometry;
-use crate::kinetic::{contact_circles, Detection};
 use crate::util::*;
 use crate::world::*;
 use ::rand::{thread_rng, Rng};
@@ -16,7 +15,7 @@ use rapier2d::prelude::RigidBodyHandle;
 
 pub trait DynamicElement {
     //fn create() -> Self;
-    fn draw(&self);
+    fn draw(&self, font: Font);
     fn update(&mut self, dt: f32, physics: &mut World);
 }
 
@@ -61,7 +60,7 @@ impl Asteroid {
 }
 
 impl DynamicElement for Asteroid {
-    fn draw(&self) {
+    fn draw(&self, font: Font) {
         let x0 = self.pos.x;
         let y0 = self.pos.y;
         let l = self.points.len();
@@ -78,9 +77,19 @@ impl DynamicElement for Asteroid {
             //let v1n = v1.normalize_or_zero();
             let v1r = v1.rotate(Vec2::from_angle(self.rot));
             let v2r = v2.rotate(Vec2::from_angle(self.rot));
+            
             draw_line(v1r.x+x0, v1r.y+y0, v2r.x+x0, v2r.y+y0, 4.0, self.color);
         }
-        draw_text(&(self.kin_eng/10000.0).round().to_string(), x0-18.0, y0, 16.0, WHITE);
+        let text_cfg = TextParams {
+            font: font,
+            font_size: 14,
+            color: WHITE,
+            ..Default::default()
+        };
+        let kin_eng_info = String::from(&(self.kin_eng/10000.0).round().to_string());
+        let txt_center = get_text_center(&kin_eng_info, Some(font), 14, 1.0, 0.0);
+        draw_text_ex(&kin_eng_info, x0-txt_center.x, y0-txt_center.y, text_cfg);
+        //draw_text(kin_eng_info, x0-18.0, y0, 16.0, WHITE);
     }
     fn update(&mut self, dt: f32, physics: &mut World) {
         match self.physics_handle {
@@ -172,16 +181,3 @@ impl DynamicCollector {
         return self.elements.len();
     }
 }
-
-/* pub struct PhysicsObjects<T> {
-    objects: Vec<T>,
-} 
-
-
-impl PhysicsObjects<T> {
-    pub fn new<T>() -> Self {
-        Self {
-            objects: vec![]
-        }
-    }
-} */

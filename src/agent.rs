@@ -1,14 +1,11 @@
 #![allow(unused)]
 use std::collections::hash_map::{Iter, IterMut};
-//use std::collections::hash_map::IterMut;
 use std::collections::HashMap;
 use std::f32::consts::PI;
 
 use macroquad::{color, prelude::*};
-use nalgebra::vector;
 use crate::consts::*;
 use crate::kinetic::make_isometry;
-use crate::kinetic::{contact_circles, Detection};
 use crate::neuro::*;
 use crate::timer::*;
 use crate::util::*;
@@ -45,8 +42,7 @@ pub struct Agent {
     pub physics_handle: Option<RigidBodyHandle>,
 }
 
-impl Agent {
-    
+impl Agent {    
     pub fn new() -> Self {
         let s = rand::gen_range(AGENT_SIZE_MIN, AGENT_SIZE_MAX) as f32;
         let motor = thread_rng().gen_bool(1.0);
@@ -82,20 +78,20 @@ impl Agent {
     }
     
     pub fn draw(&self, field_of_view: bool) {
-        let dir = Vec2::from_angle(self.rot);
+        //let dir = Vec2::from_angle(self.rot);
         let x0 = self.pos.x;
         let y0 = self.pos.y;
-        let x1 = x0 + dir.x * self.size * 1.0;
-        let y1 = y0 + dir.y * self.size * 1.0;
-        let x2 = x0 + dir.x * self.size * 2.0;
-        let y2 = y0 + dir.y * self.size * 2.0;
+        //let x1 = x0 + dir.x * self.size * 1.0;
+        //let y1 = y0 + dir.y * self.size * 1.0;
+        //let x2 = x0 + dir.x * self.size * 2.0;
+        //let y2 = y0 + dir.y * self.size * 2.0;
         if self.motor {
             let tail = Vec2::from_angle(self.rot + (self.motor_phase * 0.5));
-            let tail2 = Vec2::from_angle(self.rot + (self.motor_phase2 * 0.5));
+            //let tail2 = Vec2::from_angle(self.rot + (self.motor_phase2 * 0.5));
             let x3 = x0 - tail.x * self.size * 1.4;
             let y3 = y0 - tail.y * self.size * 1.4;
-            let x4 = x0 - tail2.x * self.size * 2.4;
-            let y4 = y0 - tail2.y * self.size * 2.4;
+            //let x4 = x0 - tail2.x * self.size * 2.4;
+            //let y4 = y0 - tail2.y * self.size * 2.4;
             draw_circle(x3, y3, self.size / 2.0, self.color);
             //draw_circle(x4, y4, self.size / 3.0, self.color);
             //draw_line(x4, y4, x3, y3, self.size / 2.0, self.color)
@@ -128,7 +124,7 @@ impl Agent {
 
     fn draw_target(&self) {
         //if !self.enemy.is_none() {
-        if let Some(rb) = self.enemy {
+        if let Some(_rb) = self.enemy {
             if let Some(enemy_position) = self.enemy_position {
                 let v0l = Vec2::from_angle(self.rot-PI/2.0)*self.size;
                 let v0r = Vec2::from_angle(self.rot+PI/2.0)*self.size;

@@ -1,5 +1,5 @@
 
-#![allow(unused)]
+//#![allow(unused)]
 
 mod sim;
 mod consts;
@@ -12,21 +12,13 @@ mod neuro;
 mod progress_bar;
 mod world;
 mod source;
-mod object;
 mod camera;
 mod element;
 
-use std::{time, thread};
-use macroquad::miniquad::conf::Icon;
 use macroquad::prelude::*;
-use macroquad::window;
 use crate::sim::*;
-use crate::world::*;
 use crate::consts::*;
 use crate::util::*;
-use crate::agent::*;
-use macroquad::time::*;
-use crate::ui::*;
 pub use crate::source::*;
 
 fn app_configuration() -> Conf {
@@ -43,7 +35,8 @@ fn app_configuration() -> Conf {
 #[macroquad::main(app_configuration)]
 async fn main() {
     let cfg = SimConfig::default();
-    let mut sim = Simulation::new(cfg);
+    let font = load_ttf_font("firacode.ttf").await.expect("can't load font resource!");
+    let mut sim = Simulation::new(cfg, font.clone());
     sim.init();
     sim.autorun_new_sim();    
     

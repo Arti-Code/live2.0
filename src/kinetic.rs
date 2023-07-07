@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use glam;
+//use glam;
 use macroquad::math::Vec2;
 use nalgebra::*;
 use parry2d::query::contact;
 use parry2d::shape::*;
-use parry2d::{math::*, query::Contact};
+use parry2d::{query::Contact};
 //use rapier2d::prelude::*;
 
-use crate::agent::Agent;
+//use crate::agent::Agent;
 
 pub fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2<f32> {
     let iso = Isometry2::new(Vector2::new(posx, posy), rotation);

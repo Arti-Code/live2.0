@@ -14,7 +14,7 @@ pub fn create_camera() -> Camera2D {
     return camera2d;
 }
 
-pub fn control_camera(camera: &mut Camera2D, screen_ratio: f32) {
+pub fn control_camera(camera: &mut Camera2D/* , screen_ratio: f32 */) {
     if is_key_pressed(KeyCode::KpAdd) {
         let h_ratio = SCREEN_HEIGHT/SCREEN_WIDTH;
         let w_ratio = SCREEN_WIDTH/SCREEN_HEIGHT;

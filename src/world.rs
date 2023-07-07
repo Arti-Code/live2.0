@@ -1,12 +1,10 @@
-use crossbeam::channel::{Receiver, Sender};
-use crossbeam::*;
+//use crossbeam::channel::{Receiver, Sender};
+//use crossbeam::*;
 use macroquad::prelude::*;
-use nalgebra::{Complex, Isometry2, Unit, Point2};
+use nalgebra::{Point2};
 use rapier2d::{na::Vector2, prelude::*};
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap};
 use std::f32::consts::PI;
-use std::thread::sleep;
-use std::time::Duration;
 use crate::consts::ASTER_SPEED;
 use crate::util::*;
 
@@ -57,9 +55,9 @@ impl World {
         }
     }
 
-    fn update_intersections(&mut self) {
+    /* fn update_intersections(&mut self) {
         self.query_pipeline.update(&self.rigid_bodies, &self.colliders);
-    }
+    } */
 
     pub fn add_circle_body(&mut self, key: u64, position: &Vec2, radius: f32, detection_range: Option<f32>) -> RigidBodyHandle {
         let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
@@ -95,7 +93,7 @@ impl World {
         return rb_handle;
     }
 
-    fn is_collider_exist(&self, collider_handle: ColliderHandle) -> bool {
+    /* fn is_collider_exist(&self, collider_handle: ColliderHandle) -> bool {
         let collider = self.colliders.get(collider_handle);
         match collider {
             Some(some_collider) => {
@@ -105,14 +103,14 @@ impl World {
                 return false;
             }
         }
-    }
+    } */
 
-    fn is_collider_sensor(&self, collider_handle: ColliderHandle) -> bool {
+    /* fn is_collider_sensor(&self, collider_handle: ColliderHandle) -> bool {
         let collider = self.colliders.get(collider_handle).unwrap();
         return collider.is_sensor();
-    }
+    } */
 
-    fn get_object_handle_from_collider(&self, collider_handle: ColliderHandle) -> Option<RigidBodyHandle> {
+    /* fn get_object_handle_from_collider(&self, collider_handle: ColliderHandle) -> Option<RigidBodyHandle> {
         let collider = self.colliders.get(collider_handle);
         match collider {
             None => {
@@ -122,7 +120,7 @@ impl World {
                 return collider.parent();
             }
         }
-    }
+    } */
 
     pub fn remove_physics_object(&mut self, body_handle: RigidBodyHandle) {
         _ = self.rigid_bodies.remove(
@@ -192,7 +190,7 @@ impl World {
         }
     }
 
-    pub fn get_contacts(&self, agent_body_handle: RigidBodyHandle) -> Option<RigidBodyHandle> {
+   /*  pub fn get_contacts(&self, agent_body_handle: RigidBodyHandle) -> Option<RigidBodyHandle> {
         let target = self.detections.get(&agent_body_handle);
         match target {
             Some((tg, dst)) => {
@@ -202,7 +200,7 @@ impl World {
                 return None;
             }
         }
-    }
+    } */
 
     fn get_body_handle_from_collider(&self, collider_handle: ColliderHandle) -> Option<RigidBodyHandle> {
         let mut collider: &Collider; 

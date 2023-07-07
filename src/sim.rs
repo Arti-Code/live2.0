@@ -1,12 +1,10 @@
-//#![allow(unused)]
+#![allow(unused)]
 
 use crate::agent::*;
 use crate::camera::*;
 use crate::consts::*;
 use crate::element;
 use crate::kinetic::*;
-use crate::object::*;
-use crate::source::*;
 use crate::ui::*;
 use crate::util::Signals;
 use crate::world::*;
@@ -19,9 +17,10 @@ use std::f32::consts::PI;
 pub struct Simulation {
     pub simulation_name: String,
     pub world_size: Vec2,
+    pub font: Font,
     pub world: World,
-    zoom_rate: f32,
-    screen_ratio: f32,
+    //zoom_rate: f32,
+    //screen_ratio: f32,
     pub camera: Camera2D,
     pub running: bool,
     pub sim_time: f64,
@@ -36,25 +35,18 @@ pub struct Simulation {
     pub elements: DynamicCollector,
 }
 
-struct CamConfig {
-    zoom_rate: f32,
-    ratio: f32,
-    target: Vec2,
-    zoom: Vec2,
-    offset: Vec2,
-}
-
 impl Simulation {
-    pub fn new(configuration: SimConfig) -> Self {
+    pub fn new(configuration: SimConfig, font: Font) -> Self {
         Self {
             simulation_name: String::new(),
             world_size: Vec2 {
                 x: WORLD_W,
                 y: WORLD_H,
             },
+            font: font,
             world: World::new(),
-            zoom_rate: 1.0 / 600.0,
-            screen_ratio: SCREEN_WIDTH / SCREEN_HEIGHT,
+            //zoom_rate: 1.0 / 600.0,
+            //screen_ratio: SCREEN_WIDTH / SCREEN_HEIGHT,
             camera: create_camera(),
             //camera: Camera2D::default(),
             running: false,
@@ -174,15 +166,15 @@ impl Simulation {
 
     fn draw_elements(&self) {
         for (id, element) in self.elements.get_iter() {
-            element.draw();
+            element.draw(self.font);
         }
     }
 
     fn draw_grid(&self, cell_size: u32) {
         let w = self.world_size.x;
         let h = self.world_size.y;
-        let col_num = ((w / cell_size as f32).floor() as u32);
-        let row_num = ((h / cell_size as f32).floor() as u32);
+        let col_num = (w / cell_size as f32).floor() as u32;
+        let row_num = (h / cell_size as f32).floor() as u32;
         //draw_grid(100, 20.0, GRAY, DARKGRAY);
         for x in 0..col_num + 1 {
             for y in 0..row_num + 1 {
@@ -205,7 +197,7 @@ impl Simulation {
         }
     }
 
-    fn get_selected(&self) -> Option<&Agent> {
+    /* fn get_selected(&self) -> Option<&Agent> {
         match self.agents.get(self.selected) {
             Some(selected_agent) => {
                 return Some(selected_agent);
@@ -214,11 +206,11 @@ impl Simulation {
                 return None;
             }
         };
-    }
+    } */
 
     pub fn input(&mut self) {
         self.mouse_input();
-        control_camera(&mut self.camera, self.screen_ratio);
+        control_camera(&mut self.camera);
     }
 
     fn mouse_input(&mut self) {
@@ -253,9 +245,9 @@ impl Simulation {
             let agent = Agent::new();
             self.agents.add_agent(agent, &mut self.world);
         }
-        if self.sim_state.sources_num < (self.config.sources_min_num as i32) {
+        /* if self.sim_state.sources_num < (self.config.sources_min_num as i32) {
             let source = Source::new();
-        }
+        } */
         if self.sim_state.asteroids_num < (ASTER_NUM) {
             let asteroid = Asteroid::new();
             self.elements.add_element(asteroid, &mut self.world);
@@ -267,7 +259,7 @@ impl Simulation {
         self.select_phase = self.select_phase % (2.0 * PI as f32);
     }
 
-    fn map_detections(&self) -> DetectionsMap {
+    /* fn map_detections(&self) -> DetectionsMap {
         let mut detections = DetectionsMap::new();
         for (id1, agent1) in self.agents.get_iter() {
             for (id2, agent2) in self.agents.get_iter() {
@@ -297,9 +289,9 @@ impl Simulation {
             }
         }
         return detections;
-    }
+    } */
 
-    fn map_collisions(&self) -> CollisionsMap {
+    /* fn map_collisions(&self) -> CollisionsMap {
         let mut hits: CollisionsMap = CollisionsMap::new();
         for (id1, a1) in self.agents.get_iter() {
             for (id2, a2) in self.agents.get_iter() {
@@ -329,7 +321,7 @@ impl Simulation {
             }
         }
         return hits;
-    }
+    } */
 
     pub fn process_ui(&mut self) {
         let marked_agent = self.agents.get(self.selected);
