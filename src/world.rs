@@ -5,7 +5,7 @@ use nalgebra::{Point2};
 use rapier2d::{na::Vector2, prelude::*};
 use std::collections::{HashMap};
 use std::f32::consts::PI;
-use crate::consts::ASTER_SPEED;
+use crate::consts::{ASTER_SPEED, WORLD_W, WORLD_H};
 use crate::util::*;
 
 
@@ -61,14 +61,33 @@ impl World {
 
     pub fn add_circle_body(&mut self, key: u64, position: &Vec2, radius: f32, detection_range: Option<f32>) -> RigidBodyHandle {
         let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
-        let ball = RigidBodyBuilder::dynamic().position(iso).user_data(key as u128).build();
-        let mut collider = ColliderBuilder::ball(radius)
+        let ball = RigidBodyBuilder::dynamic().position(iso)
+            .linear_damping(0.01).angular_damping(0.01)
+            .user_data(key as u128).build();
+        let mut collider = ColliderBuilder::ball(radius).density(0.001)
             .active_collision_types(ActiveCollisionTypes::default())
             .active_events(ActiveEvents::COLLISION_EVENTS).build();
         let rb_handle = self.rigid_bodies.insert(ball);
         let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
         if detection_range.is_some() {
             let detector  = ColliderBuilder::ball(detection_range.unwrap()).sensor(true).build();
+            _ = self.colliders.insert_with_parent(detector, rb_handle, &mut self.rigid_bodies);
+        }
+        return rb_handle;
+    }
+
+    pub fn add_dynamic_agent(&mut self, key: u64, position: &Vec2, radius: f32, rotation: f32, detection_range: Option<f32>) -> RigidBodyHandle {
+        let iso = Isometry::new(Vector2::new(position.x, position.y), rotation);
+        let ball = RigidBodyBuilder::dynamic().position(iso)
+            .linear_damping(0.5).angular_damping(0.7).additional_mass_properties(MassProperties::from_ball(1.0, radius))
+            .user_data(key as u128).build();
+        let mut collider = ColliderBuilder::ball(radius).density(0.0)
+            .active_collision_types(ActiveCollisionTypes::default())
+            .active_events(ActiveEvents::COLLISION_EVENTS).build();
+        let rb_handle = self.rigid_bodies.insert(ball);
+        let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
+        if detection_range.is_some() {
+            let detector  = ColliderBuilder::ball(detection_range.unwrap()).sensor(true).density(0.0).build();
             _ = self.colliders.insert_with_parent(detector, rb_handle, &mut self.rigid_bodies);
         }
         return rb_handle;
@@ -90,6 +109,25 @@ impl World {
         let imp = Vector2::new(rand::gen_range(-1.0, 1.0), rand::gen_range(-1.0, 1.0)) * ASTER_SPEED;
         //obj.apply_impulse(imp, true);
         obj.set_linvel(imp, true);
+        return rb_handle;
+    }
+
+    pub fn add_jet_hull(&mut self, key: u64, position: &Vec2, points: Vec<Point2<f32>>) -> RigidBodyHandle {
+        let iso = Isometry::new(Vector2::new(position.x, position.y), 0.0);
+        let poly = RigidBodyBuilder::dynamic().position(iso)
+            .linear_damping(0.05).angular_damping(0.5)
+            .can_sleep(false).user_data(key as u128).build();
+        let mut collider = ColliderBuilder::convex_polyline(points).expect("cant build hull collider")
+            .active_collision_types(ActiveCollisionTypes::default() | ActiveCollisionTypes::DYNAMIC_DYNAMIC)
+            .active_events(ActiveEvents::COLLISION_EVENTS)
+            .density(1.0).build();
+        let rb_handle = self.rigid_bodies.insert(poly);
+        let coll_handle = self.colliders.insert_with_parent(collider, rb_handle, &mut self.rigid_bodies);
+        let obj = self.rigid_bodies.get_mut(rb_handle).expect("can't get mut hull collider");
+        //obj.add
+        //let imp = Vector2::new(rand::gen_range(-1.0, 1.0), rand::gen_range(-1.0, 1.0)) * 0.0;
+        //obj.apply_impulse(imp, true);
+        //obj.set_linvel(imp, true);
         return rb_handle;
     }
 
@@ -163,18 +201,21 @@ impl World {
     }
 
     pub fn get_physics_data(&self, handle: RigidBodyHandle) -> PhysicsData {
-        let rb = self
-            .rigid_bodies
-            .get(handle)
-            .expect("handle to non-existent rigid body");
-        let iso = rb.position();
-        let (pos, rot) = self.iso_to_vec2_rot(iso);
-        let data = PhysicsData {
-            position: pos,
-            rotation: rot,
-            kin_eng: Some(rb.kinetic_energy()),
-        };
-        return data;
+        if let Some(rb) = self.rigid_bodies.get(handle) {
+            //.expect("handle to non-existent rigid body");
+            let iso = rb.position();
+            let (pos, rot) = self.iso_to_vec2_rot(iso);
+            let data = PhysicsData {
+                position: pos,
+                rotation: rot,
+                mass: rb.mass(),
+                kin_eng: Some(rb.kinetic_energy()),
+            };
+            return data;
+        } else {
+            return PhysicsData {position: Vec2::new(WORLD_W/2., WORLD_H/2.), rotation: 0.0, mass: 0.0, kin_eng: Some(0.0)};
+        }
+
     }
 
     pub fn get_object_position(&self, handle: RigidBodyHandle) -> Option<Vec2> {
@@ -263,5 +304,6 @@ impl World {
 pub struct PhysicsData {
     pub position: Vec2,
     pub rotation: f32,
+    pub mass: f32,
     pub kin_eng: Option<f32>,
 }

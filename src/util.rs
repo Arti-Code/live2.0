@@ -68,9 +68,16 @@ pub fn map_polygon(n: usize, r: f32, dev: f32) -> Vec<Vec2> {
     //let mut opoints: Vec<Point2<f32>> = vec![];
     let s = 2.0*PI/(n as f32);
     let mut a = 2.0*PI;
-    for _ in 0..n {
-        let d = rand::gen_range(-dev, dev);
-        let step = s + s*d;
+    for i in 0..n {
+        let mut step = s;
+        let mut d = rand::gen_range(-dev, dev);
+        if dev == 0.0 {
+            d = 0.0;
+        }
+        step = s + s*d;
+        if i == 0 {
+            step = 0.0;
+        } 
         a -= step;
         let x = a.sin();
         let y = a.cos();
@@ -100,6 +107,8 @@ pub fn vec2_to_point2_collection(vec2_list: &Vec<Vec2>) -> Vec<Point2<f32>> {
 //?         [[[SIGNALS]]]
 pub struct Signals {
     pub spawn_agent: bool,
+    pub spawn_asteroid: bool,
+    pub spawn_jet: bool,
     pub new_sim: bool,
     pub new_sim_name: String,
 }
@@ -108,6 +117,8 @@ impl Signals {
     pub fn new() -> Self {
         Self {
             spawn_agent: false,
+            spawn_asteroid: false,
+            spawn_jet: false,
             new_sim: false,
             new_sim_name: String::new(),
         }

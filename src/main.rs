@@ -13,6 +13,7 @@ mod world;
 mod source;
 mod camera;
 mod element;
+mod jet;
 
 use macroquad::prelude::*;
 use crate::sim::*;

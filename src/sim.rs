@@ -4,6 +4,7 @@ use crate::agent::*;
 use crate::camera::*;
 use crate::consts::*;
 use crate::element;
+use crate::jet::{Jet, JetCollector};
 use crate::kinetic::*;
 use crate::ui::*;
 use crate::util::Signals;
@@ -33,6 +34,7 @@ pub struct Simulation {
     pub mouse_state: MouseState,
     pub agents: AgentsBox,
     pub elements: DynamicCollector,
+    jets: JetCollector,
 }
 
 impl Simulation {
@@ -61,6 +63,7 @@ impl Simulation {
             agents: AgentsBox::new(),
             elements: DynamicCollector::new(),
             //sources: SourcesBox::new(),
+            jets: JetCollector::new(),
         }
     }
 
@@ -86,8 +89,20 @@ impl Simulation {
         let agents_num = self.config.agents_init_num;
         self.agents.add_many_agents(agents_num as usize, &mut self.world);
         self.elements.add_many_elements(ASTER_NUM, &mut self.world);
+        //self.jets.add_many_jets(1, &mut self.world);
+        //self.create_jet();
         //self.sources.add_many(48);
     }
+
+/*     fn create_jet(&mut self) { */
+/*         let mut jet = Jet::new(); */
+/*         let key = jet.key; */
+/*         let pos = jet.pos; */
+/*         let points = jet.points.clone(); */
+/*         let rbh = self.world.add_jet_hull(key, &pos, points.clone()); */
+/*         jet.physics_handle = Some(rbh); */
+/*         self.jets.push(jet); */
+/*     } */
 
     pub fn autorun_new_sim(&mut self) {
         self.signals.new_sim = true;
@@ -114,9 +129,20 @@ impl Simulation {
     }
 
     fn update_elements(&mut self) {
-        self.sim_state.asteroids_num = self.elements.elements.len();
         for (id, elem) in self.elements.get_iter_mut() {
             elem.update(self.sim_state.dt, &mut self.world);
+        }
+    }
+
+    fn update_jet(&mut self) {
+        for (id, jet) in self.jets.get_iter_mut() {
+            jet.update(&mut self.world);
+        }
+    }
+
+    fn draw_jet(&self) {
+        for (id, jet) in self.jets.get_iter() {
+            jet.draw(self.font);
         }
     }
 
@@ -127,6 +153,7 @@ impl Simulation {
         self.calc_selection_time();
         self.update_agents();
         self.update_elements();
+        self.update_jet();
         self.world.step_physics();
     }
 
@@ -138,6 +165,7 @@ impl Simulation {
         self.draw_grid(50);
         self.draw_agents();
         self.draw_elements();
+        self.draw_jet();
     }
 
     fn draw_agents(&self) {
@@ -146,7 +174,7 @@ impl Simulation {
             if *id == self.selected {
                 draw_field_of_view = true;
             };
-            agent.draw(draw_field_of_view);
+            agent.draw(draw_field_of_view, self.font);
         }
         match self.agents.get(self.selected) {
             Some(selected_agent) => {
@@ -188,6 +216,16 @@ impl Simulation {
             let agent = Agent::new();
             self.agents.add_agent(agent, &mut self.world);
             self.signals.spawn_agent = false;
+        }
+        if self.signals.spawn_asteroid {
+            let asteroid = Asteroid::new();
+            self.elements.add_element(asteroid, &mut self.world);
+            self.signals.spawn_asteroid = false;
+        }
+        if self.signals.spawn_jet {
+            let jet = Jet::new();
+            self.jets.add_jet(jet, &mut self.world);
+            self.signals.spawn_jet = false;
         }
         if self.signals.new_sim {
             self.signals.new_sim = false;
@@ -236,8 +274,10 @@ impl Simulation {
         self.sim_state.sim_time += self.sim_state.dt as f64;
         let (mouse_x, mouse_y) = mouse_position();
         self.mouse_state.pos = Vec2::new(mouse_x, mouse_y);
-        self.sim_state.agents_num = self.agents.count() as i32;
+        self.sim_state.agents_num = self.agents.agents.len() as i32;
+        self.sim_state.asteroids_num = self.elements.elements.len() as i32;
         self.sim_state.physics_num = self.world.get_physics_obj_num() as i32;
+        self.sim_state.jets_num = self.jets.jets.len() as i32;
     }
 
     fn check_agents_num(&mut self) {
@@ -245,12 +285,13 @@ impl Simulation {
             let agent = Agent::new();
             self.agents.add_agent(agent, &mut self.world);
         }
-        /* if self.sim_state.sources_num < (self.config.sources_min_num as i32) {
-            let source = Source::new();
-        } */
-        if self.sim_state.asteroids_num < (ASTER_NUM) {
+        if self.sim_state.asteroids_num < ASTER_NUM as i32 {
             let asteroid = Asteroid::new();
             self.elements.add_element(asteroid, &mut self.world);
+        }
+        if self.sim_state.jets_num < 1 {
+            let jet = Jet::new();
+            _ = self.jets.add_jet(jet, &mut self.world);
         }
     }
 
@@ -258,70 +299,6 @@ impl Simulation {
         self.select_phase += self.sim_state.dt * 4.0;
         self.select_phase = self.select_phase % (2.0 * PI as f32);
     }
-
-    /* fn map_detections(&self) -> DetectionsMap {
-        let mut detections = DetectionsMap::new();
-        for (id1, agent1) in self.agents.get_iter() {
-            for (id2, agent2) in self.agents.get_iter() {
-                let idx1 = *id1;
-                let idx2 = *id2;
-                if idx1 != idx2 {
-                    let contact = contact_circles(
-                        agent1.pos,
-                        agent1.rot,
-                        agent1.vision_range,
-                        agent2.pos,
-                        agent2.rot,
-                        agent2.size,
-                    );
-                    match contact {
-                        Some(contact) => {
-                            let rel_pos2 = agent2.pos - agent1.pos;
-                            let dir1 = Vec2::from_angle(agent1.rot);
-                            let ang = dir1.angle_between(rel_pos2);
-                            let dist = agent1.pos.distance(agent2.pos);
-                            let detection = Detection::new(dist, ang, agent2.pos);
-                            detections.add_detection(idx1, detection);
-                        }
-                        None => {}
-                    }
-                }
-            }
-        }
-        return detections;
-    } */
-
-    /* fn map_collisions(&self) -> CollisionsMap {
-        let mut hits: CollisionsMap = CollisionsMap::new();
-        for (id1, a1) in self.agents.get_iter() {
-            for (id2, a2) in self.agents.get_iter() {
-                let idx1 = *id1;
-                let idx2 = *id2;
-                if idx1 != idx2 {
-                    let contact = contact_circles(a1.pos, a1.rot, a1.size, a2.pos, a2.rot, a2.size);
-                    match contact {
-                        Some(contact) => {
-                            if contact.dist <= 0.0 {
-                                let p = Vec2::new(contact.point1.x, contact.point1.y);
-                                let norm = contact.normal1.data.0[0];
-                                let n = Vec2::new(norm[0], norm[1]);
-                                let penetration = contact.dist;
-                                let hit: Hit = Hit {
-                                    normal: n,
-                                    overlap: contact.dist,
-                                    target_type: ObjectType::Agent,
-                                    target_id: idx2,
-                                };
-                                hits.add_collision(idx1, hit);
-                            }
-                        }
-                        None => {}
-                    }
-                }
-            }
-        }
-        return hits;
-    } */
 
     pub fn process_ui(&mut self) {
         let marked_agent = self.agents.get(self.selected);
@@ -391,7 +368,8 @@ pub struct SimState {
     pub sim_name: String,
     pub agents_num: i32,
     pub sources_num: i32,
-    pub asteroids_num: usize,
+    pub asteroids_num: i32,
+    pub jets_num: i32,
     pub physics_num: i32,
     pub sim_time: f64,
     pub fps: i32,
@@ -405,6 +383,7 @@ impl SimState {
             agents_num: 0,
             sources_num: 0,
             asteroids_num: 0,
+            jets_num: 0,
             physics_num: 0,
             sim_time: 0.0,
             fps: 0,

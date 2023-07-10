@@ -39,7 +39,7 @@ impl Asteroid {
     pub fn new() -> Self {
         let size = rand::gen_range(ASTER_SIZE_MIN, ASTER_SIZE_MAX);
         //let n = size / 4;
-        let n = rand::gen_range(8, 16);
+        let n = rand::gen_range(5, 12);
         let points = map_polygon(n as usize, size as f32, 0.5);
         let points2 = vec2_to_point2_collection(&points);
         Self {

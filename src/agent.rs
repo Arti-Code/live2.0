@@ -12,12 +12,13 @@ use crate::util::*;
 use crate::world::*;
 use ::rand::{thread_rng, Rng};
 use rapier2d::geometry::*;
-use rapier2d::prelude::RigidBodyHandle;
+use rapier2d::prelude::{RigidBodyHandle, RigidBody};
 
 pub struct Agent {
     pub key: u64,
     pub pos: Vec2,
     pub rot: f32,
+    pub mass: f32,
     pub vel: f32,
     pub ang_vel: f32,
     pub size: f32,
@@ -52,7 +53,8 @@ impl Agent {
             key: thread_rng().gen::<u64>(),
             pos: random_position(WORLD_W, WORLD_H),
             rot: random_rotation(),
-            vel: rand::gen_range(0.0, 1.0) * AGENT_SPEED,
+            mass: 0.0,
+            vel: 0.0,
             ang_vel: 0.0,
             size: s,
             vision_range: (rand::gen_range(0.5, 1.5) * AGENT_VISION_RANGE).round(),
@@ -77,7 +79,7 @@ impl Agent {
         }
     }
     
-    pub fn draw(&self, field_of_view: bool) {
+    pub fn draw(&self, field_of_view: bool, font: Font) {
         //let dir = Vec2::from_angle(self.rot);
         let x0 = self.pos.x;
         let y0 = self.pos.y;
@@ -106,6 +108,7 @@ impl Agent {
         if field_of_view {
             draw_circle_lines(x0, y0, self.vision_range, 0.75, GRAY);
         }
+        self.draw_info(font);
     }
 
     fn draw_front(&self) {
@@ -140,6 +143,25 @@ impl Agent {
         }
     }
 
+    fn draw_info(&self, font: Font) {
+        let x0 = self.pos.x;
+        let y0 = self.pos.y;
+        let text_cfg = TextParams {
+            font: font,
+            font_size: 13,
+            color: WHITE,
+            ..Default::default()
+        };
+        let rot = self.rot;
+        let mass = self.mass;
+        let info = format!("rot: {}", (rot*10.0).round()/10.0);
+        let info_mass = format!("mass: {}", mass.round());
+        let txt_center = get_text_center(&info, Some(font), 13, 1.0, 0.0);
+        let txt_center2 = get_text_center(&info_mass, Some(font), 13, 1.0, 0.0);
+        draw_text_ex(&info, x0-txt_center.x, y0-txt_center.y+self.size*2.0, text_cfg);
+        draw_text_ex(&info_mass, x0-txt_center.x, y0-txt_center.y+self.size*2.0+15.0, text_cfg);
+    }
+
     pub fn update2(&mut self, physics: &mut World) {
         match self.physics_handle {
             Some(handle) => {
@@ -147,36 +169,45 @@ impl Agent {
                 let physics_data = physics.get_physics_data(handle);
                 self.pos = physics_data.position;
                 self.rot = physics_data.rotation;
+                self.mass = physics_data.mass;
                 match physics.rigid_bodies.get_mut(handle) {
                     Some(body) => {
                         let dir = Vec2::from_angle(self.rot);
-                        let v = dir * self.vel;
-                        body.set_linvel([v.x, v.y].into(), true);
-                        body.set_angvel(self.ang_vel, true);
-                        let mut raw_pos = matric_to_vec2(body.position().translation);
-                        let mut out_of_edge = false;
-                        if raw_pos.x < 0.0 {
-                            raw_pos.x = 0.0;
-                            out_of_edge = true;
-                        } else if raw_pos.x > WORLD_W {
-                            raw_pos.x = WORLD_W;
-                            out_of_edge = true;
-                        }
-                        if raw_pos.y < 0.0 {
-                            raw_pos.y = 0.0;
-                            out_of_edge = true;
-                        } else if raw_pos.y > WORLD_H {
-                            raw_pos.y = WORLD_H;
-                            out_of_edge = true;
-                        }
-                        if out_of_edge {
-                            body.set_position(make_isometry(raw_pos.x, raw_pos.y, self.rot), true);
-                        }
+                        let rot = self.ang_vel*AGENT_TORQUE * self.size.powi(2);
+                        let v = dir * self.vel*AGENT_IMPULSE * self.size.powi(2);
+                        //body.set_linvel([v.x, v.y].into(), true);
+                        //body.set_angvel(self.ang_vel, true);
+                        body.apply_impulse([v.x, v.y].into(), true);
+                        body.apply_torque_impulse(rot, true);
+                        self.check_edges(body);
                     }
                     None => {}
                 }
             }
             None => {}
+        }
+    }
+
+    fn check_edges(&mut self, body: &mut RigidBody) {
+        let mut raw_pos = matric_to_vec2(body.position().translation);
+        let mut out_of_edge = false;
+        if raw_pos.x < -5.0 {
+            raw_pos.x = 0.0;
+            out_of_edge = true;
+        } else if raw_pos.x > WORLD_W+5.0 {
+            raw_pos.x = WORLD_W;
+            out_of_edge = true;
+        }
+        if raw_pos.y < -5.0 {
+            raw_pos.y = 0.0;
+            out_of_edge = true;
+        } else if raw_pos.y > WORLD_H+5.0 {
+            raw_pos.y = WORLD_H;
+            out_of_edge = true;
+        }
+        if out_of_edge {
+            body.set_position(make_isometry(raw_pos.x, raw_pos.y, -self.rot), true);
+            body.set_linvel([0.0, 0.0].into(), true);
         }
     }
 
@@ -215,21 +246,21 @@ impl Agent {
             }
             let outputs = self.analizer.analize();
             if outputs[0] >= 0.0 {
-                self.vel = outputs[0] * AGENT_SPEED;
+                self.vel = outputs[0];
             } else {
                 self.vel = 0.0;
             }
-            self.ang_vel = outputs[1] * AGENT_ROTATION;
+            self.ang_vel = outputs[1];
         }
         self.pulse = (self.pulse + dt * 0.25) % 1.0;
         if self.motor {
             if self.motor_side {
-                self.motor_phase = self.motor_phase + dt * (1.0+self.vel);
+                self.motor_phase = self.motor_phase + dt * (self.vel)*30.0;
                 if self.motor_phase >= 1.0 {
                     self.motor_side = false;
                 }
             } else {
-                self.motor_phase = self.motor_phase - dt * (1.0+self.vel);
+                self.motor_phase = self.motor_phase - dt * (self.vel)*30.0;
                 if self.motor_phase <= -1.0 {
                     self.motor_side = true;
                 }
@@ -240,13 +271,17 @@ impl Agent {
                 self.motor_phase2 = self.motor_phase2 - dt * (0.75+self.vel);
             }
         }
+        //self.calc_energy(dt);
+        return self.alife;
+    }
+
+    fn calc_energy(&mut self, dt: f32) {
         if self.eng > 0.0 {
             self.eng -= self.size * 1.0 * dt;
         } else {
             self.eng = 0.0;
             self.alife = false;
         }
-        return self.alife;
     }
 
     pub fn add_energy(&mut self, e: f32) {
@@ -278,7 +313,7 @@ impl AgentsBox {
 
     pub fn add_agent(&mut self, mut agent: Agent, physics_world: &mut World) -> u64 {
         let key = agent.key;
-        let handle = physics_world.add_circle_body(key,&agent.pos, agent.size, Some(agent.vision_range));
+        let handle = physics_world.add_dynamic_agent(key,&agent.pos, agent.size, agent.rot, Some(agent.vision_range));
         agent.physics_handle = Some(handle);
         self.agents.insert(key, agent);
         return key;

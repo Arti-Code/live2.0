@@ -48,6 +48,7 @@ impl UISystem {
                 sim_state.agents_num,
                 sim_state.physics_num,
                 sim_state.asteroids_num,
+                sim_state.jets_num,
             );
             self.build_debug_window(egui_ctx, camera2d);
             match agent {
@@ -185,7 +186,8 @@ impl UISystem {
         time: f64,
         agents_num: i32,
         physics_num: i32,
-        asteroids_num: usize,
+        asteroids_num: i32,
+        jets_num: i32,
     ) {
         if self.state.performance {
             egui::Window::new("MONITOR")
@@ -197,6 +199,8 @@ impl UISystem {
                     ui.label(format!("FPS: {}", fps));
                     ui.separator();
                     ui.label(format!("TIME: {}", time.round()));
+                    ui.separator();
+                    ui.label(format!("JETS: {}", jets_num));
                     ui.separator();
                     ui.label(format!("AGENTS: {}", agents_num));
                     ui.separator();
@@ -359,20 +363,24 @@ impl UISystem {
         if self.state.create {
             egui::Window::new("CREATE")
                 .default_pos((600.0, 5.0))
-                .default_width(125.0)
+                .default_width(275.0).default_height(300.0)
                 .show(egui_ctx, |ui| {
                     ui.horizontal(|head| {
-                        head.heading("Create new creature");
+                        head.heading("CREATE NEW");
                     });
                     ui.horizontal(|mid| {
                         mid.style_mut().visuals.extreme_bg_color = Color32::BLUE;
-                        if mid
-                            .button(RichText::new("CREATE").strong().color(Color32::WHITE))
-                            .clicked()
-                        {
-                            //self.state.create = false;
-                            signals.spawn_agent = true;
-                        }
+                        mid.columns(3, |columns| {
+                            if columns[0].button(RichText::new("AGENT").strong().color(Color32::WHITE)).clicked() {
+                                signals.spawn_agent = true;
+                            }
+                            if columns[1].button(RichText::new("ASTEROID").strong().color(Color32::WHITE)).clicked() {
+                                signals.spawn_asteroid = true;
+                            }
+                            if columns[2].button(RichText::new("JET").strong().color(Color32::WHITE)).clicked() {
+                                signals.spawn_jet = true;
+                            }
+                        })
                     });
                 });
         }
