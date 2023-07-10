@@ -3,9 +3,14 @@ use std::collections::HashMap;
 //use glam;
 use macroquad::math::Vec2;
 use nalgebra::*;
-use parry2d::query::contact;
-use parry2d::shape::*;
-use parry2d::{query::Contact};
+use rapier2d::geometry::*;
+use rapier2d::parry::query::contact;
+//use rapier2d::parry::query::TrackedContact;
+use rapier2d::parry::query::*;
+use rapier2d::prelude::*;
+//use parry2d::query::contact;
+//use parry2d::shape::*;
+//use parry2d::{query::Contact};
 //use rapier2d::prelude::*;
 
 //use crate::agent::Agent;
@@ -15,7 +20,7 @@ pub fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2
     return iso;
 }
 
-pub fn contact_circles(
+/* pub fn contact_circles(
     pos1: Vec2,
     rot1: f32,
     rad1: f32,
@@ -31,7 +36,7 @@ pub fn contact_circles(
     let ball2 = Ball::new(rad2);
     let contact = contact(&pos1, &ball1, &pos2, &ball2, 0.0).unwrap();
     return contact;
-}
+} */
 
 pub fn contact_mouse(mouse_pos: Vec2, target_pos: Vec2, target_rad: f32) -> bool {
     let v1 = glam::Vec2::new(mouse_pos.x, mouse_pos.y);
@@ -115,7 +120,7 @@ pub enum DetectionTypes {
 
 
 
-pub struct Detection {
+/* pub struct Detection {
     pub distance: f32,
     pub angle: f32,
     pub pos: Vec2,
@@ -153,7 +158,7 @@ impl Detection {
         }
         return false;
     }
-}
+} */
 
 /* pub struct Detections {
     pub detections: HashMap<ObjectType, Detection>
@@ -181,7 +186,7 @@ impl Detections {
     }
 } */
 
-pub struct DetectionsMap {
+/* pub struct DetectionsMap {
     pub detections: HashMap<u64, Detection>,
     pub sources: HashMap<u64, Detection>,
 }
@@ -274,3 +279,4 @@ pub enum ObjectType {
     Source,
     Obstacle,
 }
+ */

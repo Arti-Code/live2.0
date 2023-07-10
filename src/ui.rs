@@ -1,6 +1,6 @@
 //use std::path::Path;
 
-use egui::{self, Context};
+use egui::{self, Context, Style};
 use egui::{Color32, RichText};
 //use egui_extras::image::RetainedImage;
 use egui_macroquad;
@@ -363,14 +363,18 @@ impl UISystem {
         if self.state.create {
             egui::Window::new("CREATE")
                 .default_pos((600.0, 5.0))
-                .default_width(275.0).default_height(300.0)
+                .default_width(275.0).min_height(250.0)
                 .show(egui_ctx, |ui| {
                     ui.horizontal(|head| {
                         head.heading("CREATE NEW");
                     });
                     ui.horizontal(|mid| {
                         mid.style_mut().visuals.extreme_bg_color = Color32::BLUE;
+                        //mid.set_min_height(500.0);
                         mid.columns(3, |columns| {
+                            //columns[0].set_height(400.0);
+                            //columns[1].set_height(400.0);
+                            //columns[2].set_height(400.0);
                             if columns[0].button(RichText::new("AGENT").strong().color(Color32::WHITE)).clicked() {
                                 signals.spawn_agent = true;
                             }
@@ -421,3 +425,5 @@ impl UIState {
         }
     }
 }
+
+

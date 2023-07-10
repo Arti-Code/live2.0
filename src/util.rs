@@ -1,10 +1,9 @@
-#![allow(unused)]
+//#![allow(unused)]
 
 use std::f32::consts::PI;
 
 use macroquad::{prelude::*, color};
 use nalgebra::*;
-use parry2d::math::Real;
 use crate::consts::*;
 
 
@@ -59,7 +58,7 @@ pub fn make_isometry(posx: f32, posy: f32, rotation: f32) -> nalgebra::Isometry2
     return iso;
 }
 
-pub fn matric_to_vec2(translation: Translation<Real, 2>) -> Vec2 {
+pub fn matric_to_vec2(translation: Translation<f32, 2>) -> Vec2 {
     return Vec2::new(translation.x, translation.y);
 }
 

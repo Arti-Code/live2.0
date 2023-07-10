@@ -64,7 +64,7 @@ impl World {
         let ball = RigidBodyBuilder::dynamic().position(iso)
             .linear_damping(0.01).angular_damping(0.01)
             .user_data(key as u128).build();
-        let mut collider = ColliderBuilder::ball(radius).density(0.001)
+        let mut collider = ColliderBuilder::ball(radius).density(0.001).restitution(0.5).friction(0.6)
             .active_collision_types(ActiveCollisionTypes::default())
             .active_events(ActiveEvents::COLLISION_EVENTS).build();
         let rb_handle = self.rigid_bodies.insert(ball);
@@ -98,7 +98,8 @@ impl World {
         let poly = RigidBodyBuilder::dynamic().position(iso)
             .linear_damping(0.0).angular_damping(0.0)
             .can_sleep(false).user_data(key as u128).build();
-        let mut collider = ColliderBuilder::convex_polyline(points).unwrap()
+        let collider = ColliderBuilder::convex_polyline(points).unwrap()
+            .restitution(0.5).friction(0.6)
             .active_collision_types(ActiveCollisionTypes::default() | ActiveCollisionTypes::DYNAMIC_DYNAMIC)
             .active_events(ActiveEvents::COLLISION_EVENTS)
             .density(1.0).build();

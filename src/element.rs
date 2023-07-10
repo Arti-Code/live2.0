@@ -4,7 +4,7 @@ use std::collections::HashMap;
 //use std::f32::consts::PI;
 
 use macroquad::{color, prelude::*};
-use nalgebra::{Point2};
+use nalgebra::{Point2, Vector2};
 use crate::consts::*;
 use crate::kinetic::make_isometry;
 use crate::util::*;
@@ -39,8 +39,8 @@ impl Asteroid {
     pub fn new() -> Self {
         let size = rand::gen_range(ASTER_SIZE_MIN, ASTER_SIZE_MAX);
         //let n = size / 4;
-        let n = rand::gen_range(5, 12);
-        let points = map_polygon(n as usize, size as f32, 0.5);
+        let n = rand::gen_range(6, 10);
+        let points = map_polygon(n as usize, size as f32, 0.2);
         let points2 = vec2_to_point2_collection(&points);
         Self {
             key: thread_rng().gen::<u64>(),
@@ -121,7 +121,9 @@ impl DynamicElement for Asteroid {
                             out_of_edge = true;
                         }
                         if out_of_edge {
-                            body.set_position(make_isometry(raw_pos.x, raw_pos.y, self.rot), true);
+                             let v2: Vec2 = Vec2::new(body.linvel().data.0[0][0], body.linvel().data.0[0][1])*-1.0;
+                            //body.set_position(make_isometry(raw_pos.x, raw_pos.y, self.rot), true);
+                            body.set_linvel([v2.x, v2.y].into(), true);
                         }
                     },
                     None => {}
