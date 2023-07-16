@@ -3,7 +3,6 @@ use std::collections::hash_map::{Iter, IterMut};
 use std::collections::HashMap;
 use std::f32::consts::PI;
 
-use macroquad::{color, prelude::*};
 use crate::consts::*;
 use crate::kinetic::make_isometry;
 use crate::neuro::*;
@@ -11,8 +10,9 @@ use crate::timer::*;
 use crate::util::*;
 use crate::world::*;
 use ::rand::{thread_rng, Rng};
+use macroquad::{color, prelude::*};
 use rapier2d::geometry::*;
-use rapier2d::prelude::{RigidBodyHandle, RigidBody};
+use rapier2d::prelude::{RigidBody, RigidBodyHandle};
 
 pub struct Agent {
     pub key: u64,
@@ -43,7 +43,7 @@ pub struct Agent {
     pub physics_handle: Option<RigidBodyHandle>,
 }
 
-impl Agent {    
+impl Agent {
     pub fn new() -> Self {
         let s = rand::gen_range(AGENT_SIZE_MIN, AGENT_SIZE_MAX) as f32;
         let motor = thread_rng().gen_bool(1.0);
@@ -78,7 +78,7 @@ impl Agent {
             physics_handle: None,
         }
     }
-    
+
     pub fn draw(&self, field_of_view: bool, font: Font) {
         //let dir = Vec2::from_angle(self.rot);
         let x0 = self.pos.x;
@@ -113,28 +113,28 @@ impl Agent {
 
     fn draw_front(&self) {
         let dir = Vec2::from_angle(self.rot);
-        let v0l = Vec2::from_angle(self.rot-PI/2.0)*self.size;
-        let v0r = Vec2::from_angle(self.rot+PI/2.0)*self.size;
-        let x0l = self.pos.x+v0l.x;
-        let y0l = self.pos.y+v0l.y;
-        let x0r = self.pos.x+v0r.x;
-        let y0r = self.pos.y+v0r.y;
+        let v0l = Vec2::from_angle(self.rot - PI / 2.0) * self.size;
+        let v0r = Vec2::from_angle(self.rot + PI / 2.0) * self.size;
+        let x0l = self.pos.x + v0l.x;
+        let y0l = self.pos.y + v0l.y;
+        let x0r = self.pos.x + v0r.x;
+        let y0r = self.pos.y + v0r.y;
         let x2 = self.pos.x + dir.x * self.size * 2.0;
         let y2 = self.pos.y + dir.y * self.size * 2.0;
         draw_line(x0l, y0l, x2, y2, 2.0, self.color);
-        draw_line(x0r, y0r, x2, y2, 2.0, self.color);        
+        draw_line(x0r, y0r, x2, y2, 2.0, self.color);
     }
 
     fn draw_target(&self) {
         //if !self.enemy.is_none() {
         if let Some(_rb) = self.enemy {
             if let Some(enemy_position) = self.enemy_position {
-                let v0l = Vec2::from_angle(self.rot-PI/2.0)*self.size;
-                let v0r = Vec2::from_angle(self.rot+PI/2.0)*self.size;
-                let x0l = self.pos.x+v0l.x;
-                let y0l = self.pos.y+v0l.y;
-                let x0r = self.pos.x+v0r.x;
-                let y0r = self.pos.y+v0r.y;
+                let v0l = Vec2::from_angle(self.rot - PI / 2.0) * self.size;
+                let v0r = Vec2::from_angle(self.rot + PI / 2.0) * self.size;
+                let x0l = self.pos.x + v0l.x;
+                let y0l = self.pos.y + v0l.y;
+                let x0r = self.pos.x + v0r.x;
+                let y0r = self.pos.y + v0r.y;
                 let x1 = enemy_position.x;
                 let y1 = enemy_position.y;
                 draw_line(x0l, y0l, x1, y1, 0.75, self.color);
@@ -154,12 +154,22 @@ impl Agent {
         };
         let rot = self.rot;
         let mass = self.mass;
-        let info = format!("rot: {}", (rot*10.0).round()/10.0);
+        let info = format!("rot: {}", (rot * 10.0).round() / 10.0);
         let info_mass = format!("mass: {}", mass.round());
         let txt_center = get_text_center(&info, Some(font), 13, 1.0, 0.0);
         let txt_center2 = get_text_center(&info_mass, Some(font), 13, 1.0, 0.0);
-        draw_text_ex(&info, x0-txt_center.x, y0-txt_center.y+self.size*2.0, text_cfg);
-        draw_text_ex(&info_mass, x0-txt_center.x, y0-txt_center.y+self.size*2.0+15.0, text_cfg);
+        draw_text_ex(
+            &info,
+            x0 - txt_center.x,
+            y0 - txt_center.y + self.size * 2.0,
+            text_cfg,
+        );
+        draw_text_ex(
+            &info_mass,
+            x0 - txt_center.x,
+            y0 - txt_center.y + self.size * 2.0 + 15.0,
+            text_cfg,
+        );
     }
 
     pub fn update2(&mut self, physics: &mut World) {
@@ -173,8 +183,8 @@ impl Agent {
                 match physics.rigid_bodies.get_mut(handle) {
                     Some(body) => {
                         let dir = Vec2::from_angle(self.rot);
-                        let rot = self.ang_vel*AGENT_TORQUE * self.size.powi(2);
-                        let v = dir * self.vel*AGENT_IMPULSE * self.size.powi(2);
+                        let rot = self.ang_vel * AGENT_TORQUE * self.size.powi(2);
+                        let v = dir * self.vel * AGENT_IMPULSE * self.size.powi(2);
                         //body.set_linvel([v.x, v.y].into(), true);
                         //body.set_angvel(self.ang_vel, true);
                         body.apply_impulse([v.x, v.y].into(), true);
@@ -194,14 +204,14 @@ impl Agent {
         if raw_pos.x < -5.0 {
             raw_pos.x = 0.0;
             out_of_edge = true;
-        } else if raw_pos.x > WORLD_W+5.0 {
+        } else if raw_pos.x > WORLD_W + 5.0 {
             raw_pos.x = WORLD_W;
             out_of_edge = true;
         }
         if raw_pos.y < -5.0 {
             raw_pos.y = 0.0;
             out_of_edge = true;
-        } else if raw_pos.y > WORLD_H+5.0 {
+        } else if raw_pos.y > WORLD_H + 5.0 {
             raw_pos.y = WORLD_H;
             out_of_edge = true;
         }
@@ -218,10 +228,10 @@ impl Agent {
                 let rel_pos = enemy_position - self.pos;
                 let enemy_dir = rel_pos.angle_between(Vec2::from_angle(self.rot));
                 self.enemy_dir = Some(enemy_dir);
-            } else { 
-                    self.enemy = None;
-                    self.enemy_position = None;
-                    self.enemy_dir = None;
+            } else {
+                self.enemy = None;
+                self.enemy_position = None;
+                self.enemy_dir = None;
             }
         } else if self.enemy_position.is_some() {
             self.enemy_position = None;
@@ -241,8 +251,8 @@ impl Agent {
                         self.enemy_position = None;
                         self.enemy_dir = None;
                     }
-                },
-                None => {},
+                }
+                None => {}
             }
             let outputs = self.analizer.analize();
             if outputs[0] >= 0.0 {
@@ -255,20 +265,20 @@ impl Agent {
         self.pulse = (self.pulse + dt * 0.25) % 1.0;
         if self.motor {
             if self.motor_side {
-                self.motor_phase = self.motor_phase + dt * (self.vel)*30.0;
+                self.motor_phase = self.motor_phase + dt * (self.vel) * 30.0;
                 if self.motor_phase >= 1.0 {
                     self.motor_side = false;
                 }
             } else {
-                self.motor_phase = self.motor_phase - dt * (self.vel)*30.0;
+                self.motor_phase = self.motor_phase - dt * (self.vel) * 30.0;
                 if self.motor_phase <= -1.0 {
                     self.motor_side = true;
                 }
             }
             if self.motor_side {
-                self.motor_phase2 = self.motor_phase2 + dt * (0.75+self.vel);
+                self.motor_phase2 = self.motor_phase2 + dt * (0.75 + self.vel);
             } else {
-                self.motor_phase2 = self.motor_phase2 - dt * (0.75+self.vel);
+                self.motor_phase2 = self.motor_phase2 - dt * (0.75 + self.vel);
             }
         }
         //self.calc_energy(dt);
@@ -290,7 +300,6 @@ impl Agent {
             self.eng = self.max_eng;
         }
     }
-
 }
 
 pub struct AgentsBox {
@@ -313,7 +322,13 @@ impl AgentsBox {
 
     pub fn add_agent(&mut self, mut agent: Agent, physics_world: &mut World) -> u64 {
         let key = agent.key;
-        let handle = physics_world.add_dynamic_agent(key,&agent.pos, agent.size, agent.rot, Some(agent.vision_range));
+        let handle = physics_world.add_dynamic_agent(
+            key,
+            &agent.pos,
+            agent.size,
+            agent.rot,
+            Some(agent.vision_range),
+        );
         agent.physics_handle = Some(handle);
         self.agents.insert(key, agent);
         return key;

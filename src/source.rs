@@ -5,7 +5,7 @@ use std::collections::hash_map::Iter;
 use std::collections::hash_map::IterMut;
 use std::f32::consts::PI;
 use rapier2d::geometry::*;
-use macroquad::{prelude::*, color}; 
+use macroquad::{prelude::*, color};
 use ::rand::{Rng, thread_rng};
 use crate::kinetic::{Detection, contact_circles};
 use crate::util::*;
@@ -53,7 +53,7 @@ impl Source {
     pub fn drain_eng(&mut self, eng_loss: f32) {
         self.eng -= eng_loss;
     }
-    
+
     pub fn update_collision(&mut self, collision_normal: &Vec2, penetration: f32, dt: f32) {
         self.pos -= *collision_normal * penetration.abs() * dt * 0.3;
     }
@@ -96,7 +96,7 @@ impl SourcesBox {
     pub fn get_iter(&self) -> Iter<u64, Source> {
         return self.sources.iter();
     }
-    
+
     pub fn get_iter_mut(&mut self) -> IterMut<u64, Source> {
         return self.sources.iter_mut();
     }

@@ -118,8 +118,6 @@ pub enum DetectionTypes {
     Rock,
 }
 
-
-
 /* pub struct Detection {
     pub distance: f32,
     pub angle: f32,

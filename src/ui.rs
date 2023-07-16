@@ -13,7 +13,6 @@ use crate::consts::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::sim::*;
 use crate::{progress_bar::*, Signals};
 
-
 pub struct UISystem {
     pub state: UIState,
     pub pointer_over: bool,
@@ -49,6 +48,8 @@ impl UISystem {
                 sim_state.physics_num,
                 sim_state.asteroids_num,
                 sim_state.jets_num,
+                sim_state.total_mass,
+                sim_state.total_eng,
             );
             self.build_debug_window(egui_ctx, camera2d);
             match agent {
@@ -61,121 +62,103 @@ impl UISystem {
     }
 
     fn build_top_menu(&mut self, egui_ctx: &Context, sim_name: &str) {
-        egui::TopBottomPanel::top("top_panel").default_height(100.0).show(egui_ctx, |ui| {
-            if !self.pointer_over {
-                self.pointer_over = ui.ui_contains_pointer();
-            }
-            egui::menu::bar(ui, |ui| {
-                ui.heading(RichText::new(sim_name).strong().color(Color32::GREEN));
-                ui.add_space(5.0);
-                ui.separator();
-                ui.add_space(5.0);
-                egui::menu::menu_button(ui, RichText::new("SIMULATION").strong(), |ui| {
-                    if ui
-                        .button(
-                            RichText::new("New Simulation")
-                                .strong()
-                                .color(Color32::BLUE),
-                        )
-                        .clicked()
-                    {
-                        self.state.new_sim = true;
-                    }
-                    if ui
-                        .button(
-                            RichText::new("Load Simulation")
-                                .weak()
-                                .color(Color32::from_gray(100)),
-                        )
-                        .clicked()
-                    {}
-                    if ui
-                        .button(
-                            RichText::new("Save Simulation")
-                                .weak()
-                                .color(Color32::from_gray(100)),
-                        )
-                        .clicked()
-                    {}
-                    if ui
-                        .button(RichText::new("Quit").color(Color32::RED).strong())
-                        .clicked()
-                    {
-                        self.state.quit = true;
-                    }
-                });
-                ui.add_space(10.0);
-                ui.separator();
-                ui.add_space(10.0);
-                egui::menu::menu_button(ui, RichText::new("TOOLS").strong(), |ui| {
-                    if ui
-                        .button(
-                            RichText::new("Monitor")
-                                .strong()
-                                .color(Color32::WHITE),
-                        )
-                        .clicked()
-                    {
-                        self.state.performance = !self.state.performance;
-                    }
-                    if ui
-                        .button(
-                            RichText::new("Inspector")
-                                .strong()
-                                .color(Color32::WHITE),
-                        )
-                        .clicked()
-                    {
-                        self.state.inspect = !self.state.inspect;
-                    }
-                    if ui
-                        .button(
-                            RichText::new("Debug Info")
-                                .strong()
-                                .color(Color32::WHITE),
-                        )
-                        .clicked()
-                    {
-                        self.state.mouse = !self.state.mouse;
-                    }
-                    if ui
-                        .button(
-                            RichText::new("Create")
-                                .strong()
-                                .color(Color32::WHITE),
-                        )
-                        .clicked()
-                    {
-                        self.state.create = !self.state.create;
-                    }
-                });
-                ui.add_space(10.0);
-                ui.separator();
-                ui.add_space(10.0);
-                egui::menu::menu_button(ui, RichText::new("ABOUT").strong(), |ui| {
-                    if ui
-                        .button(
-                            RichText::new("Credits")
-                                .strong()
-                                .color(Color32::WHITE),
-                        )
-                        .clicked()
-                    {
-                        self.state.credits = !self.state.credits;
-                    }
-                    if ui
-                        .button(
-                            RichText::new("Documentation")
-                                .strong()
-                                .color(Color32::WHITE),
-                        )
-                        .clicked()
-                    {
-                        self.state.docs = !self.state.docs;
-                    }
+        egui::TopBottomPanel::top("top_panel")
+            .default_height(100.0)
+            .show(egui_ctx, |ui| {
+                if !self.pointer_over {
+                    self.pointer_over = ui.ui_contains_pointer();
+                }
+                egui::menu::bar(ui, |ui| {
+                    ui.heading(RichText::new(sim_name).strong().color(Color32::GREEN));
+                    ui.add_space(5.0);
+                    ui.separator();
+                    ui.add_space(5.0);
+                    egui::menu::menu_button(ui, RichText::new("SIMULATION").strong(), |ui| {
+                        if ui
+                            .button(
+                                RichText::new("New Simulation")
+                                    .strong()
+                                    .color(Color32::BLUE),
+                            )
+                            .clicked()
+                        {
+                            self.state.new_sim = true;
+                        }
+                        if ui
+                            .button(
+                                RichText::new("Load Simulation")
+                                    .weak()
+                                    .color(Color32::from_gray(100)),
+                            )
+                            .clicked()
+                        {}
+                        if ui
+                            .button(
+                                RichText::new("Save Simulation")
+                                    .weak()
+                                    .color(Color32::from_gray(100)),
+                            )
+                            .clicked()
+                        {}
+                        if ui
+                            .button(RichText::new("Quit").color(Color32::RED).strong())
+                            .clicked()
+                        {
+                            self.state.quit = true;
+                        }
+                    });
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.add_space(10.0);
+                    egui::menu::menu_button(ui, RichText::new("TOOLS").strong(), |ui| {
+                        if ui
+                            .button(RichText::new("Monitor").strong().color(Color32::WHITE))
+                            .clicked()
+                        {
+                            self.state.performance = !self.state.performance;
+                        }
+                        if ui
+                            .button(RichText::new("Inspector").strong().color(Color32::WHITE))
+                            .clicked()
+                        {
+                            self.state.inspect = !self.state.inspect;
+                        }
+                        if ui
+                            .button(RichText::new("Debug Info").strong().color(Color32::WHITE))
+                            .clicked()
+                        {
+                            self.state.mouse = !self.state.mouse;
+                        }
+                        if ui
+                            .button(RichText::new("Create").strong().color(Color32::WHITE))
+                            .clicked()
+                        {
+                            self.state.create = !self.state.create;
+                        }
+                    });
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.add_space(10.0);
+                    egui::menu::menu_button(ui, RichText::new("ABOUT").strong(), |ui| {
+                        if ui
+                            .button(RichText::new("Credits").strong().color(Color32::WHITE))
+                            .clicked()
+                        {
+                            self.state.credits = !self.state.credits;
+                        }
+                        if ui
+                            .button(
+                                RichText::new("Documentation")
+                                    .strong()
+                                    .color(Color32::WHITE),
+                            )
+                            .clicked()
+                        {
+                            self.state.docs = !self.state.docs;
+                        }
+                    });
                 });
             });
-        });
     }
 
     fn build_monit_window(
@@ -188,6 +171,8 @@ impl UISystem {
         physics_num: i32,
         asteroids_num: i32,
         jets_num: i32,
+        total_mass: f32,
+        total_eng: f32,
     ) {
         if self.state.performance {
             egui::Window::new("MONITOR")
@@ -199,12 +184,16 @@ impl UISystem {
                     ui.label(format!("FPS: {}", fps));
                     ui.separator();
                     ui.label(format!("TIME: {}", time.round()));
+//                    ui.separator();
+//                    ui.label(format!("JETS: {}", jets_num));
+//                    ui.separator();
+//                    ui.label(format!("AGENTS: {}", agents_num));
+//                    ui.separator();
+//                    ui.label(format!("ASTEROIDS: {}", asteroids_num));
                     ui.separator();
-                    ui.label(format!("JETS: {}", jets_num));
+                    ui.label(format!("TOTAL MASS: {}", total_mass));
                     ui.separator();
-                    ui.label(format!("AGENTS: {}", agents_num));
-                    ui.separator();
-                    ui.label(format!("ASTEROIDS: {}", asteroids_num));
+                    ui.label(format!("TOTAL ENG: {}", total_eng));
                     ui.separator();
                     ui.label(format!("PHYSICS OBJECTS: {}", physics_num));
                 });
@@ -224,18 +213,26 @@ impl UISystem {
                 .show(egui_ctx, |ui| {
                     ui.label(format!("ROTATION: {}", ((rot * 10.0).round()) / 10.0));
                     ui.label(format!("SIZE: {}", size));
-                    ui.label(format!("POSITION: [X: {} | Y:{}]", pos.x.round(), pos.y.round()));
+                    ui.label(format!(
+                        "POSITION: [X: {} | Y:{}]",
+                        pos.x.round(),
+                        pos.y.round()
+                    ));
                     ui.separator();
                     ui.label(RichText::new("ENEMY").strong());
                     match (tg_pos, tg_ang) {
                         (Some(target), Some(ang)) => {
-                            ui.label(format!("enemy pos: [x: {} | y:{}]", target.x.round(), target.y.round()));
+                            ui.label(format!(
+                                "enemy pos: [x: {} | y:{}]",
+                                target.x.round(),
+                                target.y.round()
+                            ));
                             ui.label(format!("angle to enemy: [{}]", ang.round()));
-                        },
+                        }
                         (None, None) => {
                             ui.label(format!("enemy pos: ---"));
                             ui.label(format!("angle to enemy: ---"));
-                        },
+                        }
                         (_, _) => {
                             ui.label(format!("enemy pos: ---"));
                             ui.label(format!("angle to enemy: ---"));
@@ -266,12 +263,28 @@ impl UISystem {
                 .default_width(175.0)
                 .show(egui_ctx, |ui| {
                     ui.label(RichText::new("MOUSE").strong());
-                    ui.label(format!("coords [x: {} | y: {}]", mouse_x.round(), mouse_y.round()));
+                    ui.label(format!(
+                        "coords [x: {} | y: {}]",
+                        mouse_x.round(),
+                        mouse_y.round()
+                    ));
                     ui.separator();
                     ui.label(RichText::new("CAMERA").strong());
-                    ui.label(format!("target [x:{} | Y:{}]", camera2d.target.x.round(), camera2d.target.y.round()));
-                    ui.label(format!("offset [x:{} | Y:{}]", camera2d.offset.x.round(), camera2d.offset.y.round()));
-                    ui.label(format!("zoom [x:{} | Y:{}]", (camera2d.zoom.x*10000.).round()/10., (camera2d.zoom.y*10000.).round()/10.));
+                    ui.label(format!(
+                        "target [x:{} | Y:{}]",
+                        camera2d.target.x.round(),
+                        camera2d.target.y.round()
+                    ));
+                    ui.label(format!(
+                        "offset [x:{} | Y:{}]",
+                        camera2d.offset.x.round(),
+                        camera2d.offset.y.round()
+                    ));
+                    ui.label(format!(
+                        "zoom [x:{} | Y:{}]",
+                        (camera2d.zoom.x * 10000.).round() / 10.,
+                        (camera2d.zoom.y * 10000.).round() / 10.
+                    ));
                     ui.label(format!("rotation: {}", camera2d.rotation.round()));
                 });
         }
@@ -363,7 +376,8 @@ impl UISystem {
         if self.state.create {
             egui::Window::new("CREATE")
                 .default_pos((600.0, 5.0))
-                .default_width(275.0).min_height(250.0)
+                .default_width(275.0)
+                .min_height(250.0)
                 .show(egui_ctx, |ui| {
                     ui.horizontal(|head| {
                         head.heading("CREATE NEW");
@@ -375,13 +389,22 @@ impl UISystem {
                             //columns[0].set_height(400.0);
                             //columns[1].set_height(400.0);
                             //columns[2].set_height(400.0);
-                            if columns[0].button(RichText::new("AGENT").strong().color(Color32::WHITE)).clicked() {
+                            if columns[0]
+                                .button(RichText::new("AGENT").strong().color(Color32::WHITE))
+                                .clicked()
+                            {
                                 signals.spawn_agent = true;
                             }
-                            if columns[1].button(RichText::new("ASTEROID").strong().color(Color32::WHITE)).clicked() {
+                            if columns[1]
+                                .button(RichText::new("ASTEROID").strong().color(Color32::WHITE))
+                                .clicked()
+                            {
                                 signals.spawn_asteroid = true;
                             }
-                            if columns[2].button(RichText::new("JET").strong().color(Color32::WHITE)).clicked() {
+                            if columns[2]
+                                .button(RichText::new("JET").strong().color(Color32::WHITE))
+                                .clicked()
+                            {
                                 signals.spawn_jet = true;
                             }
                         })
@@ -425,5 +448,3 @@ impl UIState {
         }
     }
 }
-
-

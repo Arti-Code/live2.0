@@ -4,12 +4,15 @@ use crate::agent::*;
 use crate::camera::*;
 use crate::consts::*;
 use crate::element;
+use crate::element::*;
 use crate::jet::{Jet, JetCollector};
 use crate::kinetic::*;
+use crate::particle::Particle;
+use crate::particle::ParticleCollector;
+use crate::particle::ParticleTable;
 use crate::ui::*;
 use crate::util::Signals;
 use crate::world::*;
-use crate::element::*;
 use egui_macroquad;
 use macroquad::camera::Camera2D;
 use macroquad::prelude::*;
@@ -35,6 +38,9 @@ pub struct Simulation {
     pub agents: AgentsBox,
     pub elements: DynamicCollector,
     jets: JetCollector,
+    statics: StaticCollector,
+    //particle_types: ParticleTable,
+    particles: ParticleCollector,
 }
 
 impl Simulation {
@@ -62,8 +68,10 @@ impl Simulation {
             mouse_state: MouseState { pos: Vec2::NAN },
             agents: AgentsBox::new(),
             elements: DynamicCollector::new(),
-            //sources: SourcesBox::new(),
             jets: JetCollector::new(),
+            statics: StaticCollector::new(),
+            //particle_types: ParticleTable::new_random(),
+            particles: ParticleCollector::new(),
         }
     }
 
@@ -75,6 +83,8 @@ impl Simulation {
         self.world = World::new();
         self.agents.agents.clear();
         self.elements.elements.clear();
+        self.particles.elements.clear();
+        //self.statics.elements.clear();
         self.sim_time = 0.0;
         self.sim_state = SimState::new();
         self.sim_state.sim_name = String::from(&self.simulation_name);
@@ -83,26 +93,39 @@ impl Simulation {
         self.select_phase = 0.0;
         self.mouse_state = MouseState { pos: Vec2::NAN };
         self.running = true;
+        self.init();
+        //self.build_wall();
     }
 
     pub fn init(&mut self) {
         let agents_num = self.config.agents_init_num;
-        self.agents.add_many_agents(agents_num as usize, &mut self.world);
-        self.elements.add_many_elements(ASTER_NUM, &mut self.world);
+        //self.agents.add_many_agents(agents_num as usize, &mut self.world);
+        //self.elements.add_many_elements(ASTER_NUM, &mut self.world);
+        self.particles.add_many_elements(PARTICLES_NUM as usize, &mut self.world);
+        //self.build_wall();
         //self.jets.add_many_jets(1, &mut self.world);
         //self.create_jet();
         //self.sources.add_many(48);
     }
 
-/*     fn create_jet(&mut self) { */
-/*         let mut jet = Jet::new(); */
-/*         let key = jet.key; */
-/*         let pos = jet.pos; */
-/*         let points = jet.points.clone(); */
-/*         let rbh = self.world.add_jet_hull(key, &pos, points.clone()); */
-/*         jet.physics_handle = Some(rbh); */
-/*         self.jets.push(jet); */
-/*     } */
+    /*     fn create_jet(&mut self) { */
+    /*         let mut jet = Jet::new(); */
+    /*         let key = jet.key; */
+    /*         let pos = jet.pos; */
+    /*         let points = jet.points.clone(); */
+    /*         let rbh = self.world.add_jet_hull(key, &pos, points.clone()); */
+    /*         jet.physics_handle = Some(rbh); */
+    /*         self.jets.push(jet); */
+    /*     } */
+
+    pub fn build_wall(&mut self) {
+        for i in 0..1 {
+            let y = 500.0 + i as f32 * 40.0;
+            let x = 500.0;
+            let b = StaticBox::new(x, y, 250.0);
+            self.statics.add_element(b, &mut self.world);
+        }
+    }
 
     pub fn autorun_new_sim(&mut self) {
         self.signals.new_sim = true;
@@ -134,6 +157,16 @@ impl Simulation {
         }
     }
 
+    fn update_particles(&mut self) {
+        self.sim_state.total_mass = 0.0;
+        self.sim_state.total_eng = 0.0;
+        for (id, elem) in self.particles.get_iter_mut() {
+            elem.update(self.sim_state.dt, &mut self.world);
+            self.sim_state.total_eng += elem.eng; 
+            self.sim_state.total_mass += elem.mass; 
+        }
+    }
+
     fn update_jet(&mut self) {
         for (id, jet) in self.jets.get_iter_mut() {
             jet.update(&mut self.world);
@@ -151,9 +184,10 @@ impl Simulation {
         self.update_sim_state();
         self.check_agents_num();
         self.calc_selection_time();
-        self.update_agents();
-        self.update_elements();
-        self.update_jet();
+        //self.update_agents();
+        //self.update_elements();
+        //self.update_jet();
+        self.update_particles();
         self.world.step_physics();
     }
 
@@ -163,9 +197,23 @@ impl Simulation {
         clear_background(BLACK);
         draw_rectangle_lines(0.0, 0.0, self.world_size.x, self.world_size.y, 3.0, WHITE);
         self.draw_grid(50);
-        self.draw_agents();
-        self.draw_elements();
-        self.draw_jet();
+        //self.draw_statics();
+        //self.draw_agents();
+        //self.draw_elements();
+        //self.draw_jet();
+        self.draw_particles();
+    }
+
+    fn draw_particles(&self) {
+        for (id, p) in self.particles.get_iter() {
+            p.draw();
+        }
+    }
+
+    fn draw_statics(&self) {
+        for (id, s) in self.statics.get_iter() {
+            s.draw();
+        }
     }
 
     fn draw_agents(&self) {
@@ -289,9 +337,13 @@ impl Simulation {
             let asteroid = Asteroid::new();
             self.elements.add_element(asteroid, &mut self.world);
         }
-        if self.sim_state.jets_num < 1 {
-            let jet = Jet::new();
-            _ = self.jets.add_jet(jet, &mut self.world);
+//        if self.sim_state.jets_num < 1 {
+//            let jet = Jet::new();
+//            _ = self.jets.add_jet(jet, &mut self.world);
+//        }
+        if self.particles.count() < PARTICLES_NUM as usize {
+            //let p = Particle::new();
+            self.particles.add_many_elements(1, &mut self.world);
         }
     }
 
@@ -302,8 +354,12 @@ impl Simulation {
 
     pub fn process_ui(&mut self) {
         let marked_agent = self.agents.get(self.selected);
-        self.ui
-            .ui_process(&self.sim_state, marked_agent, &mut self.signals, &self.camera);
+        self.ui.ui_process(
+            &self.sim_state,
+            marked_agent,
+            &mut self.signals,
+            &self.camera,
+        );
     }
 
     pub fn draw_ui(&self) {
@@ -367,10 +423,11 @@ impl SimConfig {
 pub struct SimState {
     pub sim_name: String,
     pub agents_num: i32,
-    pub sources_num: i32,
     pub asteroids_num: i32,
     pub jets_num: i32,
     pub physics_num: i32,
+    pub total_mass: f32,
+    pub total_eng: f32,
     pub sim_time: f64,
     pub fps: i32,
     pub dt: f32,
@@ -381,10 +438,11 @@ impl SimState {
         Self {
             sim_name: String::new(),
             agents_num: 0,
-            sources_num: 0,
             asteroids_num: 0,
             jets_num: 0,
             physics_num: 0,
+            total_mass: 0.0,
+            total_eng: 0.0,
             sim_time: 0.0,
             fps: 0,
             dt: 0.0,

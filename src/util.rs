@@ -2,33 +2,43 @@
 
 use std::f32::consts::PI;
 
-use macroquad::{prelude::*, color};
-use nalgebra::*;
 use crate::consts::*;
+use macroquad::{color, prelude::*};
+use nalgebra::*;
 
+pub fn random_unit() -> f32 {
+    return rand::gen_range(-1.0, 1.0);
+}
 
 pub fn random_position(x_max: f32, y_max: f32) -> Vec2 {
     let x = rand::gen_range(0.0, x_max);
     let y = rand::gen_range(0.0, y_max);
-    return  Vec2::new(x, y);
+    return Vec2::new(x, y);
 }
 
 pub fn random_rotation() -> f32 {
-    let rot = rand::gen_range(0.0, PI*2.0);
+    let rot = rand::gen_range(0.0, PI * 2.0);
     return rot;
 }
 
 pub fn random_unit_vec2() -> Vec2 {
     let x = rand::gen_range(-1.0, 1.0);
     let y = rand::gen_range(-1.0, 1.0);
-    return  Vec2::new(x, y).normalize_or_zero();    
+    return Vec2::new(x, y).normalize_or_zero();
 }
 
 pub fn random_color() -> color::Color {
     let colors = vec![RED, GREEN, BLUE, YELLOW, ORANGE, GRAY, SKYBLUE, LIME];
     let num = colors.len();
     let c = rand::gen_range(0, num);
-    return  colors[c];
+    return colors[c];
+}
+
+pub fn random_color5() -> color::Color {
+    let colors = [RED, BLUE, GREEN, YELLOW, WHITE];
+    //let num = colors.len();
+    let c = rand::gen_range(0, 5);
+    return colors[c];
 }
 
 pub fn angle2vec2(angle: f32) -> Vec2 {
@@ -40,15 +50,15 @@ pub fn angle2vec2(angle: f32) -> Vec2 {
 pub fn wrap_around(v: &Vec2) -> Vec2 {
     let tolerance = 5.0;
     let mut vr = Vec2::new(v.x, v.y);
-    if vr.x > WORLD_W+tolerance {
-        vr.x = 0.0-tolerance;
-    } else if vr.x < 0.0-tolerance {
-        vr.x = WORLD_W+tolerance;
+    if vr.x > WORLD_W + tolerance {
+        vr.x = 0.0 - tolerance;
+    } else if vr.x < 0.0 - tolerance {
+        vr.x = WORLD_W + tolerance;
     }
-    if vr.y > WORLD_H+tolerance {
-        vr.y = 0.0-tolerance;
-    } else if vr.y < 0.0-tolerance {
-        vr.y = WORLD_H+tolerance;
+    if vr.y > WORLD_H + tolerance {
+        vr.y = 0.0 - tolerance;
+    } else if vr.y < 0.0 - tolerance {
+        vr.y = WORLD_H + tolerance;
     }
     return vr;
 }
@@ -65,18 +75,18 @@ pub fn matric_to_vec2(translation: Translation<f32, 2>) -> Vec2 {
 pub fn map_polygon(n: usize, r: f32, dev: f32) -> Vec<Vec2> {
     let mut points: Vec<Vec2> = vec![];
     //let mut opoints: Vec<Point2<f32>> = vec![];
-    let s = 2.0*PI/(n as f32);
-    let mut a = 2.0*PI;
+    let s = 2.0 * PI / (n as f32);
+    let mut a = 2.0 * PI;
     for i in 0..n {
         let mut step = s;
         let mut d = rand::gen_range(-dev, dev);
         if dev == 0.0 {
             d = 0.0;
         }
-        step = s + s*d;
+        step = s + s * d;
         if i == 0 {
             step = 0.0;
-        } 
+        }
         a -= step;
         let x = a.sin();
         let y = a.cos();

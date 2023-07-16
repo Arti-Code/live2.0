@@ -1,5 +1,5 @@
 //use macroquad::rand::*;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 
 pub struct Timer {
     pub time: f32,
@@ -59,5 +59,4 @@ impl Timer {
         self.stop();
         self.run = true
     }
-
 }
