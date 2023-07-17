@@ -52,7 +52,7 @@ impl Jet {
         }
     }
 
-    pub fn draw(&self, font: Font) {
+    pub fn draw(&self, font: &Font) {
         let x0 = self.pos.x;
         let y0 = self.pos.y;
         let l = self.vertices.len();
@@ -80,14 +80,14 @@ impl Jet {
         }
         let dir = Vec2::from_angle(self.rot) * self.size;
         draw_line(x0, y0, x0 + dir.x, y0 + dir.y, 4.0, self.color);
-        self.draw_info(font);
+        self.draw_info(&font);
     }
 
-    fn draw_info(&self, font: Font) {
+    fn draw_info(&self, font: &Font) {
         let x0 = self.pos.x;
         let y0 = self.pos.y;
         let text_cfg = TextParams {
-            font: font,
+            font: Some(font),
             font_size: 14,
             color: WHITE,
             ..Default::default()

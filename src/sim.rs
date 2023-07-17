@@ -13,7 +13,7 @@ use crate::particle::ParticleTable;
 use crate::ui::*;
 use crate::util::Signals;
 use crate::world::*;
-use egui_macroquad;
+//use egui_macroquad;
 use macroquad::camera::Camera2D;
 use macroquad::prelude::*;
 use std::f32::consts::PI;
@@ -175,7 +175,7 @@ impl Simulation {
 
     fn draw_jet(&self) {
         for (id, jet) in self.jets.get_iter() {
-            jet.draw(self.font);
+            jet.draw(&self.font);
         }
     }
 
@@ -222,7 +222,7 @@ impl Simulation {
             if *id == self.selected {
                 draw_field_of_view = true;
             };
-            agent.draw(draw_field_of_view, self.font);
+            agent.draw(draw_field_of_view, &self.font);
         }
         match self.agents.get(self.selected) {
             Some(selected_agent) => {

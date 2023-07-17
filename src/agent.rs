@@ -79,7 +79,7 @@ impl Agent {
         }
     }
 
-    pub fn draw(&self, field_of_view: bool, font: Font) {
+    pub fn draw(&self, field_of_view: bool, font: &Font) {
         //let dir = Vec2::from_angle(self.rot);
         let x0 = self.pos.x;
         let y0 = self.pos.y;
@@ -108,7 +108,7 @@ impl Agent {
         if field_of_view {
             draw_circle_lines(x0, y0, self.vision_range, 0.75, GRAY);
         }
-        self.draw_info(font);
+        self.draw_info(&font);
     }
 
     fn draw_front(&self) {
@@ -143,11 +143,11 @@ impl Agent {
         }
     }
 
-    fn draw_info(&self, font: Font) {
+    fn draw_info(&self, font: &Font) {
         let x0 = self.pos.x;
         let y0 = self.pos.y;
         let text_cfg = TextParams {
-            font: font,
+            font: Some(font),
             font_size: 13,
             color: WHITE,
             ..Default::default()

@@ -1,6 +1,7 @@
 //use std::path::Path;
 
-use egui::{self, Context, Style};
+use egui::{self, Context, Style, Widget};
+use egui::Ui;
 use egui::{Color32, RichText};
 //use egui_extras::image::RetainedImage;
 use egui_macroquad;

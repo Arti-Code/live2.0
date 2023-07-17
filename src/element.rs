@@ -16,7 +16,7 @@ use rapier2d::prelude::RigidBodyHandle;
 
 pub trait DynamicElement {
     //fn create() -> Self;
-    fn draw(&self, font: Font);
+    fn draw(&self, font: &Font);
     fn update(&mut self, dt: f32, physics: &mut World);
 }
 
@@ -60,7 +60,7 @@ impl Asteroid {
 }
 
 impl DynamicElement for Asteroid {
-    fn draw(&self, font: Font) {
+    fn draw(&self, font: &Font) {
         let x0 = self.pos.x;
         let y0 = self.pos.y;
         let l = self.points.len();
@@ -88,7 +88,7 @@ impl DynamicElement for Asteroid {
             );
         }
         let text_cfg = TextParams {
-            font: font,
+            font: Some(font),
             font_size: 14,
             color: WHITE,
             ..Default::default()
