@@ -242,7 +242,7 @@ impl Simulation {
 
     fn draw_elements(&self) {
         for (id, element) in self.elements.get_iter() {
-            element.draw(self.font);
+            element.draw(&self.font);
         }
     }
 

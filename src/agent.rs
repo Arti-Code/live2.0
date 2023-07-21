@@ -162,13 +162,13 @@ impl Agent {
             &info,
             x0 - txt_center.x,
             y0 - txt_center.y + self.size * 2.0,
-            text_cfg,
+            text_cfg.clone(),
         );
         draw_text_ex(
             &info_mass,
             x0 - txt_center.x,
             y0 - txt_center.y + self.size * 2.0 + 15.0,
-            text_cfg,
+            text_cfg.clone(),
         );
     }
 

@@ -80,7 +80,7 @@ impl Jet {
         }
         let dir = Vec2::from_angle(self.rot) * self.size;
         draw_line(x0, y0, x0 + dir.x, y0 + dir.y, 4.0, self.color);
-        self.draw_info(&font);
+        self.draw_info(font);
     }
 
     fn draw_info(&self, font: &Font) {

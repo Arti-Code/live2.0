@@ -1,10 +1,11 @@
 //use std::path::Path;
 
-use egui::{self, Context, Style, Widget};
+use egui::{self, Style, Context, Widget};
 use egui::Ui;
 use egui::{Color32, RichText};
 //use egui_extras::image::RetainedImage;
 use egui_macroquad;
+//use egui_macroquad::egui::Context;
 //use image::open;
 use macroquad::prelude::*;
 //use macroquad::ui::StyleBuilder;
@@ -29,7 +30,27 @@ impl UISystem {
         }
     }
 
-    pub fn ui_process(
+    pub fn ui_process(&mut self, sim_state: &SimState, agent: Option<&Agent>, signals: &mut Signals, camera2d: &Camera2D) {
+        let ctx = egui::Context::default();
+        self.build_top_menu(&ctx, &sim_state.sim_name);
+        //self.build_top_menu(&sim_state.sim_name);
+        //egui::TopBottomPanel::top("toper").show(ctx, self.build_top_menu) {
+        ////self.pointer_over = egui_ctx.is_pointer_over_area();
+        //    self.build_top_menu(egui_ctx, &sim_state.sim_name);
+        //});
+        self.build_quit_window(&ctx);
+        self.build_monit_window(&ctx, sim_state.fps, sim_state.dt, sim_state.sim_time, sim_state.agents_num, sim_state.physics_num, sim_state.asteroids_num, sim_state.jets_num, sim_state.total_mass, sim_state.total_eng);
+        self.build_debug_window(&ctx, camera2d);
+        match agent {
+            Some(agent) => self.build_inspect_window(&ctx, agent),
+            None => {}
+        }
+        self.build_create_window(&ctx, signals);
+        self.build_new_sim_window(&ctx, signals);
+        //});
+    }
+
+/*     pub fn ui_process2(
         &mut self,
         sim_state: &SimState,
         agent: Option<&Agent>,
@@ -60,7 +81,7 @@ impl UISystem {
             self.build_create_window(egui_ctx, signals);
             self.build_new_sim_window(egui_ctx, signals);
         });
-    }
+    } */
 
     fn build_top_menu(&mut self, egui_ctx: &Context, sim_name: &str) {
         egui::TopBottomPanel::top("top_panel")
